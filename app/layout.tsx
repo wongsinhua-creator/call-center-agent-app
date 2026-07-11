@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import Link from "next/link";
 import { AuthNav } from "@/components/AuthNav";
+import { AppNav } from "@/components/AppNav";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -22,39 +22,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased min-h-screen bg-neutral-50 text-neutral-900">
-        <header className="border-b border-neutral-200 bg-white">
-          <nav className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
-            <Link href="/" className="font-semibold tracking-tight whitespace-nowrap">
-              Complaint Tracker
-            </Link>
-            <div className="flex items-center gap-3 sm:gap-4 text-sm">
-              <Link href="/" className="hidden sm:inline text-neutral-600 hover:text-neutral-900">
-                Complaints
-              </Link>
-              <Link
-                href="/dashboard"
-                className="text-neutral-600 hover:text-neutral-900 whitespace-nowrap"
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/insights"
-                className="text-neutral-600 hover:text-neutral-900 whitespace-nowrap"
-              >
-                Insights
-              </Link>
-              <AuthNav />
-              <Link
-                href="/complaints/new"
-                className="rounded-md bg-neutral-900 text-white px-3 py-1.5 hover:bg-neutral-700 whitespace-nowrap"
-              >
-                <span className="sm:hidden">New</span>
-                <span className="hidden sm:inline">New Complaint</span>
-              </Link>
-            </div>
-          </nav>
-        </header>
-        <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">{children}</main>
+        <AppNav auth={<AuthNav />} />
+        <div className="md:pl-56">
+          <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">{children}</main>
+        </div>
       </body>
     </html>
   );
