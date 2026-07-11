@@ -2,7 +2,7 @@
 
 A polished, demoable call-center complaint tracker with AI-powered tagging and prioritization.
 
-**Live demo**: _add your Vercel URL here after deploy_
+**Live demo**: https://call-center-agent-app.vercel.app
 
 ## 30-second demo script
 
