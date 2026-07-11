@@ -51,6 +51,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
     auditEntries.push({
       complaintId: id,
+      userId: current.user_id,
       action: "status_change",
       actor: "agent",
       oldValue: current.status,
@@ -82,6 +83,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     auditEntries.push({
       complaintId: id,
+      userId: current.user_id,
       action: "category_override",
       actor: "agent",
       oldValue: oldCategory?.name ?? "none",

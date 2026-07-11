@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { classifyComplaint, priorityFromUrgency } from "@/lib/ai/classify";
 import { writeAuditLog } from "@/lib/audit";
+import { DEMO_USER_ID } from "@/lib/demo";
 
 const CHANNELS = ["phone", "chat", "email"];
 const MIN_DESCRIPTION_LENGTH = 10;
@@ -31,6 +32,13 @@ export async function POST(request: Request) {
   }
 
   const supabase = await createClient();
+
+  // Owner scoping: authenticated agents own their rows; anonymous submissions
+  // land in the public demo pool. RLS enforces both (0002_lock_down.sql).
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const ownerId = user?.id ?? DEMO_USER_ID;
 
   let categoryAi: string | null = null;
   let categoryAiSource: string | null = null;
@@ -65,6 +73,7 @@ export async function POST(request: Request) {
   const { data: inserted, error: insertError } = await supabase
     .from("complaints")
     .insert({
+      user_id: ownerId,
       caller_name: callerName,
       caller_phone: callerPhone,
       channel,
@@ -91,6 +100,7 @@ export async function POST(request: Request) {
 
   await writeAuditLog(supabase, {
     complaintId: inserted.id,
+    userId: ownerId,
     action: "created",
     actor: "agent",
     newValue: "open",
@@ -99,6 +109,7 @@ export async function POST(request: Request) {
   if (categoryAi) {
     await writeAuditLog(supabase, {
       complaintId: inserted.id,
+      userId: ownerId,
       action: "ai_tagged",
       actor: "system",
       newValue: `${categoryAi} (urgency ${urgencyScore}, confidence ${categoryAiConfidence})`,

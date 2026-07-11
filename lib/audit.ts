@@ -5,6 +5,7 @@ export async function writeAuditLog(
   supabase: SupabaseClient,
   params: {
     complaintId: string;
+    userId: string;
     action: AuditAction;
     actor: Actor;
     oldValue?: string | null;
@@ -13,6 +14,7 @@ export async function writeAuditLog(
 ) {
   const { error } = await supabase.from("audit_logs").insert({
     complaint_id: params.complaintId,
+    user_id: params.userId,
     action: params.action,
     actor: params.actor,
     old_value: params.oldValue ?? null,
