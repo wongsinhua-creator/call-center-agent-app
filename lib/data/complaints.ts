@@ -47,6 +47,8 @@ export interface DashboardStats {
   totalInProgress: number;
   totalResolved: number;
   byCategory: { name: string; color: string; count: number }[];
+  byAgent: { name: string; count: number }[];
+  unassignedCount: number;
   priorityQueue: ComplaintWithCategory[];
 }
 
@@ -67,6 +69,13 @@ export async function getDashboardStats(supabase: SupabaseClient): Promise<Dashb
     else byCategoryMap.set(name, { name, color, count: 1 });
   }
 
+  const byAgentMap = new Map<string, number>();
+  let unassignedCount = 0;
+  for (const c of openComplaints) {
+    if (c.handled_by) byAgentMap.set(c.handled_by, (byAgentMap.get(c.handled_by) ?? 0) + 1);
+    else unassignedCount += 1;
+  }
+
   const priorityQueue = openComplaints
     .filter((c) => c.urgency_score !== null)
     .sort((a, b) => (b.urgency_score ?? 0) - (a.urgency_score ?? 0))
@@ -77,6 +86,10 @@ export async function getDashboardStats(supabase: SupabaseClient): Promise<Dashb
     totalInProgress,
     totalResolved,
     byCategory: Array.from(byCategoryMap.values()).sort((a, b) => b.count - a.count),
+    byAgent: Array.from(byAgentMap, ([name, count]) => ({ name, count })).sort(
+      (a, b) => b.count - a.count,
+    ),
+    unassignedCount,
     priorityQueue,
   };
 }

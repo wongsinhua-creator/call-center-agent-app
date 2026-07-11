@@ -64,6 +64,28 @@ export default async function DashboardPage() {
           </section>
 
           <section className="bg-white border border-neutral-200 rounded-lg p-5 space-y-3">
+            <h2 className="text-sm font-medium text-neutral-500">Agent Workload (open complaints)</h2>
+            {stats.byAgent.length === 0 && stats.unassignedCount === 0 ? (
+              <p className="text-sm text-neutral-400">No open complaints.</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {stats.byAgent.map((agent) => (
+                  <li key={agent.name} className="flex items-center justify-between text-sm">
+                    <span className="text-neutral-800">{agent.name}</span>
+                    <span className="font-medium text-neutral-900">{agent.count}</span>
+                  </li>
+                ))}
+                {stats.unassignedCount > 0 && (
+                  <li className="flex items-center justify-between text-sm border-t border-neutral-100 pt-1.5">
+                    <span className="text-neutral-400">Unassigned</span>
+                    <span className="font-medium text-neutral-500">{stats.unassignedCount}</span>
+                  </li>
+                )}
+              </ul>
+            )}
+          </section>
+
+          <section className="bg-white border border-neutral-200 rounded-lg p-5 space-y-3">
             <h2 className="text-sm font-medium text-neutral-500">Top Priority Queue</h2>
             {stats.priorityQueue.length === 0 ? (
               <p className="text-sm text-neutral-400">No open complaints with an urgency score yet.</p>
