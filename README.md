@@ -1,6 +1,17 @@
-# vibe-stack-supabase
+# Call Center Complaint Tracker
 
-Next.js 15 + Supabase starter for shipping vibe-coded apps fast. Clone, provision, build.
+A polished, demoable call-center complaint tracker with AI-powered tagging and prioritization.
+
+**Live demo**: _add your Vercel URL here after deploy_
+
+## 30-second demo script
+
+1. Open the live URL — five seeded complaints load with status, priority, and AI category badges.
+2. Click **New Complaint**, fill in a caller name and a description (e.g. "Customer says they were
+   charged twice and wants an immediate refund"), pick a channel, and submit.
+3. Land on the detail page — the AI has already tagged the category and urgency score.
+4. Open **Dashboard** — the open count and priority queue reflect the new complaint.
+5. Back on the detail page, change status to **In Progress** and save — refresh to confirm it persists.
 
 ## Stack
 
@@ -8,34 +19,42 @@ Next.js 15 + Supabase starter for shipping vibe-coded apps fast. Clone, provisio
 |---|---|
 | Framework | Next.js 15 (App Router, React 19, Server Actions) |
 | Language | TypeScript strict |
-| Styles | Tailwind CSS v4 (CSS-first, no config file) |
-| Auth + DB | Supabase (`@supabase/ssr`) |
-| Package manager | Bun |
+| Styles | Tailwind CSS v4 |
+| Database | Supabase (Postgres + RLS) |
+| AI | OpenAI (gpt-4o-mini) with a deterministic rule-based fallback |
 | Deploy | Vercel |
 
-## Quick start
+## How it works
+
+- **Complaints** are the core record: caller info, channel, description, status, priority.
+- On submit, `/api/complaints` calls the classifier in [lib/ai/classify.ts](lib/ai/classify.ts) to
+  auto-assign a category and urgency score. If `OPENAI_API_KEY` isn't set (or the call fails), a
+  rule-based keyword/heuristic classifier fills in instead — the complaint is always tagged.
+- Every status change, category override, and AI tag writes a row to `audit_logs`, shown as a
+  timeline on the complaint detail page.
+- The dashboard aggregates live counts, a category breakdown, and a top-5 urgency queue.
+
+See [docs/](docs/) for the full PRD, architecture, data model, and sprint plan this was built from.
+
+## Local setup
 
 ```bash
-bun install
-cp .env.example .env.local   # fill in your Supabase keys
-bun dev
+npm install
+cp .env.example .env.local   # fill in Supabase keys (see below); OPENAI_API_KEY optional
+npm run dev
 ```
 
-Open http://localhost:3000. Edit `app/page.tsx` to start building.
+Open http://localhost:3000.
 
-## Provisioning a new project
+### Database
 
-Use the `/new-vibe-project <name>` skill (see `claude-dotfiles` repo) which:
-1. Clones this template and renames it
-2. Creates a new GitHub repo and pushes
-3. Creates a Supabase project and injects URL + anon key
-4. Creates a Vercel project linked to the GitHub repo
-5. Triggers first deploy and returns the preview URL
+Apply `supabase/migrations/0001_init.sql` to your Supabase project (SQL editor, or `supabase db
+push`) before running the app — it creates `categories`, `complaints`, `audit_logs`, and seed rows.
 
-## Working with AI
+## Notes
 
-See [CLAUDE.md](CLAUDE.md) for conventions. This repo is pre-wired for gstack — start with `/office-hours`.
-
-## Switching to Neon
-
-If you need Postgres without Supabase (e.g. prefer Drizzle ORM + Clerk for auth), a `vibe-stack-neon` variant is planned. For now: fork this and swap `@supabase/ssr` for `drizzle-orm` + `@neondatabase/serverless`, add Clerk or NextAuth.
+- v1 has no login wall by design — the homepage is the working app with seed data, so it's
+  demoable and screenshot-able. Auth + per-agent data isolation is a later "Lock it down" sprint
+  (see [docs/TASKS.md](docs/TASKS.md)).
+- Secrets (`SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`) are only ever read in `app/api/` routes,
+  never in client components.
