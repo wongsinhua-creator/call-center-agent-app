@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { writeAuditLog } from "@/lib/audit";
+import { closeOpenSegments, openSegment } from "@/lib/handlers";
 import type { Status } from "@/lib/types";
 
 const STATUSES: Status[] = ["open", "in_progress", "resolved"];
@@ -128,6 +129,27 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   for (const entry of auditEntries) {
     await writeAuditLog(supabase, entry);
+  }
+
+  // Handling-segment lifecycle: each portion of the complaint's life is
+  // attributed to the agent who held it (complaint_handlers).
+  const finalStatus = (updates.status as Status | undefined) ?? current.status;
+  const finalHandledBy = newHandledBy !== undefined ? newHandledBy : current.handled_by;
+  const handledByChanged = newHandledBy !== undefined && newHandledBy !== current.handled_by;
+  const statusChanged = typeof updates.status === "string";
+
+  if (handledByChanged) {
+    await closeOpenSegments(supabase, id);
+    if (newHandledBy && finalStatus !== "resolved") {
+      await openSegment(supabase, { complaintId: id, userId: current.user_id, agentName: newHandledBy });
+    }
+  } else if (statusChanged) {
+    if (finalStatus === "resolved") {
+      await closeOpenSegments(supabase, id);
+    } else if (current.status === "resolved" && finalHandledBy) {
+      // Reopened: the assigned agent starts a fresh handling portion.
+      await openSegment(supabase, { complaintId: id, userId: current.user_id, agentName: finalHandledBy });
+    }
   }
 
   return NextResponse.json({ ok: true });

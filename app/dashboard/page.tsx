@@ -4,6 +4,7 @@ import { getDashboardStats } from "@/lib/data/complaints";
 import { StatusBadge, PriorityBadge, CategoryChip } from "@/components/badges";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorBanner } from "@/components/ErrorBanner";
+import { formatDuration } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,66 @@ export default async function DashboardPage() {
             <StatTile label="In Progress" value={stats.totalInProgress} accent="text-amber-700" />
             <StatTile label="Resolved" value={stats.totalResolved} accent="text-emerald-700" />
           </div>
+
+          <section className="bg-white border border-neutral-200 rounded-lg p-5 space-y-3">
+            <h2 className="text-sm font-medium text-neutral-500">Closure KPIs</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+              <div>
+                <p className="text-xs text-neutral-500">Closure rate</p>
+                <p className="text-xl font-semibold text-neutral-900">
+                  {Math.round(stats.closure.closureRate * 100)}%
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-neutral-500">Avg time to close</p>
+                <p className="text-xl font-semibold text-neutral-900">
+                  {stats.closure.avgCloseMs !== null ? formatDuration(stats.closure.avgCloseMs) : "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-neutral-500">Fastest close</p>
+                <p className="text-xl font-semibold text-neutral-900">
+                  {stats.closure.fastestCloseMs !== null ? formatDuration(stats.closure.fastestCloseMs) : "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-neutral-500">Slowest close</p>
+                <p className="text-xl font-semibold text-neutral-900">
+                  {stats.closure.slowestCloseMs !== null ? formatDuration(stats.closure.slowestCloseMs) : "—"}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {stats.agentKpis.length > 0 && (
+            <section className="bg-white border border-neutral-200 rounded-lg p-5 space-y-3">
+              <h2 className="text-sm font-medium text-neutral-500">Agent Performance</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs text-neutral-500">
+                      <th className="py-1.5 pr-4 font-medium">Agent</th>
+                      <th className="py-1.5 pr-4 font-medium">Portions handled</th>
+                      <th className="py-1.5 pr-4 font-medium">Complaints closed</th>
+                      <th className="py-1.5 font-medium">Avg time to close</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.agentKpis.map((a) => (
+                      <tr key={a.name} className="border-t border-neutral-100">
+                        <td className="py-1.5 pr-4 font-medium text-neutral-900">{a.name}</td>
+                        <td className="py-1.5 pr-4 text-neutral-700">{a.portionsHandled}</td>
+                        <td className="py-1.5 pr-4 text-neutral-700">{a.complaintsClosed}</td>
+                        <td className="py-1.5 text-neutral-700">
+                          {a.avgCloseMs !== null ? formatDuration(a.avgCloseMs) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
 
           <section className="bg-white border border-neutral-200 rounded-lg p-5 space-y-3">
             <h2 className="text-sm font-medium text-neutral-500">Open Complaints by Category</h2>

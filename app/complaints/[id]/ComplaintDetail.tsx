@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { StatusBadge, PriorityBadge, CategoryChip, ConfidenceBadge } from "@/components/badges";
-import { formatDateTime } from "@/lib/format";
-import type { AuditLog, Category, ComplaintWithCategory, Status } from "@/lib/types";
+import { formatDateTime, formatDuration } from "@/lib/format";
+import type { AuditLog, Category, ComplaintHandler, ComplaintWithCategory, Status } from "@/lib/types";
 
 const CHANNEL_LABELS: Record<string, string> = { phone: "Phone", chat: "Chat", email: "Email" };
 const STATUS_OPTIONS: { value: Status; label: string }[] = [
@@ -25,10 +25,12 @@ export function ComplaintDetail({
   complaint,
   auditLogs,
   categories,
+  handlers,
 }: {
   complaint: ComplaintWithCategory;
   auditLogs: AuditLog[];
   categories: Category[];
+  handlers: ComplaintHandler[];
 }) {
   const router = useRouter();
 
@@ -211,6 +213,31 @@ export function ComplaintDetail({
           Every assignment is recorded in the audit log below.
         </p>
         {agentError && <p className="text-xs text-red-600">{agentError}</p>}
+
+        {handlers.length > 0 && (
+          <div className="pt-2 border-t border-neutral-100">
+            <h3 className="text-xs font-medium text-neutral-500 mb-2">
+              Handling history — who handled which portion
+            </h3>
+            <ul className="space-y-1.5">
+              {handlers.map((h) => {
+                const end = h.ended_at ?? (complaint.status === "resolved" ? complaint.resolved_at : null);
+                const durationMs = end ? new Date(end).getTime() - new Date(h.started_at).getTime() : null;
+                return (
+                  <li key={h.id} className="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
+                    <span className="font-medium text-neutral-800">{h.agent_name}</span>
+                    <span className="text-xs text-neutral-500">
+                      {formatDateTime(h.started_at)} → {h.ended_at ? formatDateTime(h.ended_at) : "current"}
+                      <span className="text-neutral-400">
+                        {" "}· {durationMs !== null ? formatDuration(Math.max(0, durationMs)) : "ongoing"}
+                      </span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
       </section>
 
       <section className="bg-white border border-neutral-200 rounded-lg p-5 space-y-3">

@@ -46,6 +46,17 @@ export interface ComplaintWithCategory extends Complaint {
   category: Category | null;
 }
 
+// One handling "portion": opened on assignment, closed on handoff/resolution.
+export interface ComplaintHandler {
+  id: string;
+  user_id: string | null;
+  complaint_id: string;
+  agent_name: string;
+  started_at: string;
+  ended_at: string | null;
+  created_at: string;
+}
+
 export interface AuditLog {
   id: string;
   user_id: string | null;

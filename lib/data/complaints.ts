@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { AuditLog, Category, ComplaintWithCategory } from "@/lib/types";
+import type { AuditLog, Category, ComplaintHandler, ComplaintWithCategory } from "@/lib/types";
 
 const COMPLAINT_SELECT = "*, category:categories(*)";
 
@@ -42,6 +42,33 @@ export async function getAuditLogs(supabase: SupabaseClient, complaintId: string
   return data ?? [];
 }
 
+export async function getHandlers(
+  supabase: SupabaseClient,
+  complaintId: string,
+): Promise<ComplaintHandler[]> {
+  const { data, error } = await supabase
+    .from("complaint_handlers")
+    .select("*")
+    .eq("complaint_id", complaintId)
+    .order("started_at", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export interface AgentKpi {
+  name: string;
+  portionsHandled: number;
+  complaintsClosed: number;
+  avgCloseMs: number | null;
+}
+
+export interface ClosureKpis {
+  closureRate: number; // resolved / total, 0–1
+  avgCloseMs: number | null; // mean created_at → resolved_at
+  fastestCloseMs: number | null;
+  slowestCloseMs: number | null;
+}
+
 export interface DashboardStats {
   totalOpen: number;
   totalInProgress: number;
@@ -50,10 +77,17 @@ export interface DashboardStats {
   byAgent: { name: string; count: number }[];
   unassignedCount: number;
   priorityQueue: ComplaintWithCategory[];
+  closure: ClosureKpis;
+  agentKpis: AgentKpi[];
 }
 
 export async function getDashboardStats(supabase: SupabaseClient): Promise<DashboardStats> {
   const complaints = await getComplaints(supabase);
+  const { data: handlerRows, error: handlersError } = await supabase
+    .from("complaint_handlers")
+    .select("*");
+  if (handlersError) throw handlersError;
+  const handlers: ComplaintHandler[] = handlerRows ?? [];
 
   const totalOpen = complaints.filter((c) => c.status === "open").length;
   const totalInProgress = complaints.filter((c) => c.status === "in_progress").length;
@@ -81,6 +115,49 @@ export async function getDashboardStats(supabase: SupabaseClient): Promise<Dashb
     .sort((a, b) => (b.urgency_score ?? 0) - (a.urgency_score ?? 0))
     .slice(0, 5);
 
+  // Closure KPIs: time-to-close over resolved complaints with a resolved_at.
+  const closeTimes = complaints
+    .filter((c) => c.status === "resolved" && c.resolved_at)
+    .map((c) => new Date(c.resolved_at!).getTime() - new Date(c.created_at).getTime())
+    .filter((ms) => ms >= 0);
+  const closure: ClosureKpis = {
+    closureRate: complaints.length > 0 ? totalResolved / complaints.length : 0,
+    avgCloseMs:
+      closeTimes.length > 0 ? closeTimes.reduce((a, b) => a + b, 0) / closeTimes.length : null,
+    fastestCloseMs: closeTimes.length > 0 ? Math.min(...closeTimes) : null,
+    slowestCloseMs: closeTimes.length > 0 ? Math.max(...closeTimes) : null,
+  };
+
+  // Per-agent KPIs: portions from handling segments; closures credited to the
+  // agent holding the complaint when it was resolved.
+  const agentMap = new Map<string, AgentKpi & { closeSum: number }>();
+  const agentOf = (name: string) => {
+    let a = agentMap.get(name);
+    if (!a) {
+      a = { name, portionsHandled: 0, complaintsClosed: 0, avgCloseMs: null, closeSum: 0 };
+      agentMap.set(name, a);
+    }
+    return a;
+  };
+  for (const h of handlers) {
+    agentOf(h.agent_name).portionsHandled += 1;
+  }
+  for (const c of complaints) {
+    if (c.status === "resolved" && c.handled_by) {
+      const a = agentOf(c.handled_by);
+      a.complaintsClosed += 1;
+      if (c.resolved_at) {
+        a.closeSum += new Date(c.resolved_at).getTime() - new Date(c.created_at).getTime();
+      }
+    }
+  }
+  const agentKpis: AgentKpi[] = Array.from(agentMap.values())
+    .map(({ closeSum, ...a }) => ({
+      ...a,
+      avgCloseMs: a.complaintsClosed > 0 && closeSum > 0 ? closeSum / a.complaintsClosed : null,
+    }))
+    .sort((x, y) => y.complaintsClosed - x.complaintsClosed || y.portionsHandled - x.portionsHandled);
+
   return {
     totalOpen,
     totalInProgress,
@@ -91,5 +168,7 @@ export async function getDashboardStats(supabase: SupabaseClient): Promise<Dashb
     ),
     unassignedCount,
     priorityQueue,
+    closure,
+    agentKpis,
   };
 }

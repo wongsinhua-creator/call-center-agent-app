@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { classifyComplaint, priorityFromUrgency } from "@/lib/ai/classify";
 import { writeAuditLog } from "@/lib/audit";
+import { openSegment } from "@/lib/handlers";
 import { DEMO_USER_ID } from "@/lib/demo";
 
 const CHANNELS = ["phone", "chat", "email"];
@@ -129,6 +130,11 @@ export async function POST(request: Request) {
       actor: "agent",
       actorName,
       newValue: handledBy,
+    });
+    await openSegment(supabase, {
+      complaintId: inserted.id,
+      userId: ownerId,
+      agentName: handledBy,
     });
   }
 

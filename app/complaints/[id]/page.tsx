@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getComplaint, getAuditLogs, getCategories } from "@/lib/data/complaints";
+import { getComplaint, getAuditLogs, getCategories, getHandlers } from "@/lib/data/complaints";
 import { ComplaintDetail } from "./ComplaintDetail";
 import { ErrorBanner } from "@/components/ErrorBanner";
 
@@ -23,10 +23,18 @@ export default async function ComplaintDetailPage({
 
   if (!complaint) notFound();
 
-  const [auditLogs, categories] = await Promise.all([
+  const [auditLogs, categories, handlers] = await Promise.all([
     getAuditLogs(supabase, id),
     getCategories(supabase),
+    getHandlers(supabase, id),
   ]);
 
-  return <ComplaintDetail complaint={complaint} auditLogs={auditLogs} categories={categories} />;
+  return (
+    <ComplaintDetail
+      complaint={complaint}
+      auditLogs={auditLogs}
+      categories={categories}
+      handlers={handlers}
+    />
+  );
 }
