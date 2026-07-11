@@ -4,6 +4,10 @@ A polished, demoable call-center complaint tracker with AI-powered tagging and p
 
 **Live demo**: https://call-center-agent-app.vercel.app
 
+![Complaint list with AI tags](docs/screenshots/complaint-list.png)
+
+![Dashboard with live counts and priority queue](docs/screenshots/dashboard.png)
+
 ## 30-second demo script
 
 1. Open the live URL — five seeded complaints load with status, priority, and AI category badges.
