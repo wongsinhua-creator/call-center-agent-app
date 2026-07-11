@@ -34,8 +34,9 @@ A polished, demoable call-center complaint tracker with AI-powered tagging and p
 - On submit, `/api/complaints` calls the classifier in [lib/ai/classify.ts](lib/ai/classify.ts) to
   auto-assign a category and urgency score. If `OPENAI_API_KEY` isn't set (or the call fails), a
   rule-based keyword/heuristic classifier fills in instead — the complaint is always tagged.
-- Every status change, category override, and AI tag writes a row to `audit_logs`, shown as a
-  timeline on the complaint detail page.
+- Each complaint tracks its **handling agent** — set when the call is taken or assigned/reassigned
+  from the detail page. Every status change, category override, assignment, and AI tag writes a
+  row to `audit_logs` **naming the acting agent**, shown as a timeline on the detail page.
 - The dashboard aggregates live counts, a category breakdown, and a top-5 urgency queue.
 
 See [docs/](docs/) for the full PRD, architecture, data model, and sprint plan this was built from.
