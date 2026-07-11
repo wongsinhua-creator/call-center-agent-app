@@ -11,10 +11,11 @@ const LINKS = [
   { href: "/insights", label: "Insights" },
 ];
 
-function NavLinks({ pathname }: { pathname: string }) {
+function NavLinks({ pathname, isAdmin }: { pathname: string; isAdmin: boolean }) {
+  const links = isAdmin ? [...LINKS, { href: "/admin", label: "Admin" }] : LINKS;
   return (
     <>
-      {LINKS.map(({ href, label }) => {
+      {links.map(({ href, label }) => {
         const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
         return (
           <Link
@@ -41,7 +42,7 @@ function NavLinks({ pathname }: { pathname: string }) {
 }
 
 // `auth` is a server-rendered slot (AuthNav) passed from the layout.
-export function AppNav({ auth }: { auth: React.ReactNode }) {
+export function AppNav({ auth, isAdmin = false }: { auth: React.ReactNode; isAdmin?: boolean }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
@@ -76,7 +77,7 @@ export function AppNav({ auth }: { auth: React.ReactNode }) {
         </div>
         {open && (
           <nav className="border-t border-neutral-200 px-4 py-3 space-y-1 bg-white">
-            <NavLinks pathname={pathname} />
+            <NavLinks pathname={pathname} isAdmin={isAdmin} />
             <div className="pt-2 border-t border-neutral-100 text-sm px-3 py-2">{auth}</div>
           </nav>
         )}
@@ -90,7 +91,7 @@ export function AppNav({ auth }: { auth: React.ReactNode }) {
           </Link>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">
-          <NavLinks pathname={pathname} />
+          <NavLinks pathname={pathname} isAdmin={isAdmin} />
         </nav>
         <div className="px-4 py-4 border-t border-neutral-200 text-sm">{auth}</div>
       </aside>
