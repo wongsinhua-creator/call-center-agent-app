@@ -37,6 +37,12 @@ export default function RootLayout({
               >
                 Dashboard
               </Link>
+              <Link
+                href="/insights"
+                className="text-neutral-600 hover:text-neutral-900 whitespace-nowrap"
+              >
+                Insights
+              </Link>
               <AuthNav />
               <Link
                 href="/complaints/new"
