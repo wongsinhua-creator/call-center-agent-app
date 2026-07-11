@@ -1,21 +1,78 @@
-export default function Home() {
-  return (
-    <main className="min-h-screen flex items-center justify-center p-8">
-      <div className="max-w-xl text-center space-y-4">
-        <h1 className="text-4xl font-bold tracking-tight">vibe-stack-supabase</h1>
-        <p className="text-neutral-500">
-          Edit{" "}
-          <code className="bg-neutral-100 px-1.5 py-0.5 rounded text-sm">
-            app/page.tsx
-          </code>{" "}
-          to start building.
-        </p>
-        <p className="text-xs text-neutral-400">
-          See{" "}
-          <code className="bg-neutral-100 px-1.5 py-0.5 rounded">CLAUDE.md</code>{" "}
-          for project conventions and gstack workflow.
-        </p>
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { getComplaints } from "@/lib/data/complaints";
+import { StatusBadge, PriorityBadge, CategoryChip, ConfidenceBadge } from "@/components/badges";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorBanner } from "@/components/ErrorBanner";
+
+export const dynamic = "force-dynamic";
+
+const CHANNEL_LABELS: Record<string, string> = {
+  phone: "Phone",
+  chat: "Chat",
+  email: "Email",
+};
+
+export default async function ComplaintListPage() {
+  const supabase = await createClient();
+
+  let complaints;
+  try {
+    complaints = await getComplaints(supabase);
+  } catch {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-semibold tracking-tight">Complaints</h1>
+        <ErrorBanner message="Couldn't load complaints. Check the database connection and try again." />
       </div>
-    </main>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold tracking-tight">Complaints</h1>
+        <Link
+          href="/complaints/new"
+          className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-sm hover:bg-neutral-700"
+        >
+          New Complaint
+        </Link>
+      </div>
+
+      {complaints.length === 0 ? (
+        <EmptyState title="No complaints yet" hint="Submit one from the New Complaint button above." />
+      ) : (
+        <ul className="space-y-3">
+          {complaints.map((c) => (
+            <li key={c.id}>
+              <Link
+                href={`/complaints/${c.id}`}
+                className="block rounded-lg border border-neutral-200 bg-white px-4 py-3 hover:border-neutral-400 transition-colors"
+              >
+                <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                  <StatusBadge status={c.status} />
+                  <PriorityBadge priority={c.priority} />
+                  <CategoryChip name={c.category?.name ?? c.category_ai} color={c.category?.color} />
+                  <ConfidenceBadge
+                    confidence={c.category_ai_confidence}
+                    reviewStatus={c.category_ai_review_status}
+                  />
+                </div>
+                <div className="flex items-baseline justify-between gap-4">
+                  <p className="font-medium text-neutral-900">{c.caller_name}</p>
+                  <p className="text-xs text-neutral-400 whitespace-nowrap">
+                    {new Date(c.created_at).toLocaleString()}
+                  </p>
+                </div>
+                <p className="text-sm text-neutral-500 mt-0.5 line-clamp-1">
+                  {CHANNEL_LABELS[c.channel] ?? c.channel} · {c.description}
+                </p>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

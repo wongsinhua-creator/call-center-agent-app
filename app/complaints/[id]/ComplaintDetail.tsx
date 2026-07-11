@@ -1,0 +1,289 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { StatusBadge, PriorityBadge, CategoryChip, ConfidenceBadge } from "@/components/badges";
+import type { AuditLog, Category, ComplaintWithCategory, Status } from "@/lib/types";
+
+const CHANNEL_LABELS: Record<string, string> = { phone: "Phone", chat: "Chat", email: "Email" };
+const STATUS_OPTIONS: { value: Status; label: string }[] = [
+  { value: "open", label: "Open" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "resolved", label: "Resolved" },
+];
+
+const AUDIT_LABELS: Record<string, string> = {
+  created: "Complaint created",
+  status_change: "Status changed",
+  ai_tagged: "AI tagged",
+  category_override: "Category changed",
+};
+
+export function ComplaintDetail({
+  complaint,
+  auditLogs,
+  categories,
+}: {
+  complaint: ComplaintWithCategory;
+  auditLogs: AuditLog[];
+  categories: Category[];
+}) {
+  const router = useRouter();
+
+  const [status, setStatus] = useState<Status>(complaint.status);
+  const [statusSaving, setStatusSaving] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
+
+  const [categoryId, setCategoryId] = useState(complaint.category_id ?? "");
+  const [categorySaving, setCategorySaving] = useState(false);
+  const [categoryError, setCategoryError] = useState<string | null>(null);
+
+  const [notes, setNotes] = useState(complaint.resolution_notes ?? "");
+  const [notesSaving, setNotesSaving] = useState(false);
+  const [notesError, setNotesError] = useState<string | null>(null);
+  const [confirmingResolve, setConfirmingResolve] = useState(false);
+
+  async function patch(body: Record<string, unknown>) {
+    const res = await fetch(`/api/complaints/${complaint.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error ?? "Request failed");
+    }
+    return res.json();
+  }
+
+  async function saveStatus() {
+    if (statusSaving || status === complaint.status) return;
+    setStatusSaving(true);
+    setStatusError(null);
+    try {
+      await patch({ status });
+      router.refresh();
+    } catch (err) {
+      setStatusError(err instanceof Error ? err.message : "Failed to update status.");
+    } finally {
+      setStatusSaving(false);
+    }
+  }
+
+  async function saveCategory() {
+    if (categorySaving || categoryId === (complaint.category_id ?? "")) return;
+    setCategorySaving(true);
+    setCategoryError(null);
+    try {
+      await patch({ category_id: categoryId });
+      router.refresh();
+    } catch (err) {
+      setCategoryError(err instanceof Error ? err.message : "Failed to update category.");
+    } finally {
+      setCategorySaving(false);
+    }
+  }
+
+  async function saveNotes() {
+    if (notesSaving) return;
+    setNotesSaving(true);
+    setNotesError(null);
+    try {
+      await patch({ resolution_notes: notes });
+      router.refresh();
+    } catch (err) {
+      setNotesError(err instanceof Error ? err.message : "Failed to save notes.");
+    } finally {
+      setNotesSaving(false);
+    }
+  }
+
+  async function markResolved() {
+    setNotesSaving(true);
+    setNotesError(null);
+    try {
+      await patch({ status: "resolved", resolution_notes: notes });
+      setConfirmingResolve(false);
+      setStatus("resolved");
+      router.refresh();
+    } catch (err) {
+      setNotesError(err instanceof Error ? err.message : "Failed to resolve complaint.");
+    } finally {
+      setNotesSaving(false);
+    }
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6">
+      <div>
+        <div className="flex flex-wrap items-center gap-2 mb-2">
+          <StatusBadge status={complaint.status} />
+          <PriorityBadge priority={complaint.priority} />
+          <CategoryChip name={complaint.category?.name ?? complaint.category_ai} color={complaint.category?.color} />
+        </div>
+        <h1 className="text-2xl font-semibold tracking-tight">{complaint.caller_name}</h1>
+        <p className="text-sm text-neutral-500 mt-0.5">
+          {CHANNEL_LABELS[complaint.channel] ?? complaint.channel}
+          {complaint.caller_phone ? ` · ${complaint.caller_phone}` : ""} ·{" "}
+          {new Date(complaint.created_at).toLocaleString()}
+        </p>
+      </div>
+
+      <section className="bg-white border border-neutral-200 rounded-lg p-5 space-y-2">
+        <h2 className="text-sm font-medium text-neutral-500">Description</h2>
+        <p className="text-neutral-900 whitespace-pre-wrap">{complaint.description}</p>
+      </section>
+
+      <section className="bg-white border border-neutral-200 rounded-lg p-5 space-y-4">
+        <h2 className="text-sm font-medium text-neutral-500">AI Assessment</h2>
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <span className="text-neutral-600">
+            Urgency score:{" "}
+            <strong className="text-neutral-900">
+              {complaint.urgency_score !== null ? complaint.urgency_score.toFixed(1) : "—"}
+            </strong>{" "}
+            / 10
+          </span>
+          <ConfidenceBadge
+            confidence={complaint.urgency_score_confidence}
+            reviewStatus={complaint.urgency_score_review_status}
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <span className="text-neutral-600">
+            AI suggested category: <strong className="text-neutral-900">{complaint.category_ai ?? "—"}</strong>
+          </span>
+          <ConfidenceBadge
+            confidence={complaint.category_ai_confidence}
+            reviewStatus={complaint.category_ai_review_status}
+          />
+        </div>
+        {complaint.category_ai_source && (
+          <p className="text-xs text-neutral-400">Source: {complaint.category_ai_source}</p>
+        )}
+      </section>
+
+      <section className="bg-white border border-neutral-200 rounded-lg p-5 space-y-3">
+        <h2 className="text-sm font-medium text-neutral-500">Status</h2>
+        <div className="flex items-center gap-2">
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value as Status)}
+            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+          >
+            {STATUS_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={saveStatus}
+            disabled={statusSaving || status === complaint.status}
+            className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-sm hover:bg-neutral-700 disabled:opacity-40"
+          >
+            {statusSaving ? "Saving…" : "Save Status"}
+          </button>
+        </div>
+        {statusError && <p className="text-xs text-red-600">{statusError}</p>}
+      </section>
+
+      <section className="bg-white border border-neutral-200 rounded-lg p-5 space-y-3">
+        <h2 className="text-sm font-medium text-neutral-500">Category</h2>
+        <div className="flex items-center gap-2">
+          <select
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+          >
+            <option value="">Uncategorized</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={saveCategory}
+            disabled={categorySaving || categoryId === (complaint.category_id ?? "")}
+            className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-sm hover:bg-neutral-700 disabled:opacity-40"
+          >
+            {categorySaving ? "Saving…" : "Save Category"}
+          </button>
+        </div>
+        {categoryError && <p className="text-xs text-red-600">{categoryError}</p>}
+      </section>
+
+      <section className="bg-white border border-neutral-200 rounded-lg p-5 space-y-3">
+        <h2 className="text-sm font-medium text-neutral-500">Resolution Notes</h2>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={3}
+          placeholder="How was this resolved?"
+          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+        />
+        {complaint.resolved_at && (
+          <p className="text-xs text-neutral-400">Resolved {new Date(complaint.resolved_at).toLocaleString()}</p>
+        )}
+        {notesError && <p className="text-xs text-red-600">{notesError}</p>}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={saveNotes}
+            disabled={notesSaving}
+            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50 disabled:opacity-40"
+          >
+            {notesSaving ? "Saving…" : "Save Notes"}
+          </button>
+          {complaint.status !== "resolved" && !confirmingResolve && (
+            <button
+              onClick={() => setConfirmingResolve(true)}
+              className="rounded-md bg-emerald-700 text-white px-3 py-1.5 text-sm hover:bg-emerald-600"
+            >
+              Mark Resolved
+            </button>
+          )}
+          {confirmingResolve && (
+            <span className="flex items-center gap-2 text-sm">
+              <span className="text-neutral-600">Confirm resolve?</span>
+              <button
+                onClick={markResolved}
+                disabled={notesSaving}
+                className="rounded-md bg-emerald-700 text-white px-3 py-1.5 text-sm hover:bg-emerald-600 disabled:opacity-40"
+              >
+                {notesSaving ? "Resolving…" : "Yes, resolve"}
+              </button>
+              <button
+                onClick={() => setConfirmingResolve(false)}
+                className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50"
+              >
+                Cancel
+              </button>
+            </span>
+          )}
+        </div>
+      </section>
+
+      <section className="bg-white border border-neutral-200 rounded-lg p-5 space-y-3">
+        <h2 className="text-sm font-medium text-neutral-500">Audit Log</h2>
+        {auditLogs.length === 0 ? (
+          <p className="text-sm text-neutral-400">No activity recorded yet.</p>
+        ) : (
+          <ol className="space-y-2">
+            {auditLogs.map((log) => (
+              <li key={log.id} className="text-sm border-l-2 border-neutral-200 pl-3">
+                <p className="text-neutral-800">
+                  {AUDIT_LABELS[log.action] ?? log.action}
+                  {log.old_value && log.new_value ? `: ${log.old_value} → ${log.new_value}` : ""}
+                  {!log.old_value && log.new_value ? `: ${log.new_value}` : ""}
+                  <span className="text-neutral-400"> · {log.actor}</span>
+                </p>
+                <p className="text-xs text-neutral-400">{new Date(log.created_at).toLocaleString()}</p>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+    </div>
+  );
+}
