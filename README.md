@@ -42,6 +42,8 @@ A polished, demoable call-center complaint tracker with AI-powered tagging and p
   shows exactly **who handled which portion** and for how long.
 - The dashboard measures **closure KPIs**: closure rate, average / fastest / slowest time to
   close, and a per-agent performance table (portions handled, complaints closed, avg close time).
+- **Customers** (`/customers`) groups all unclosed complaints by caller (phone-first identity
+  matching) with repeat-caller flags, so multi-complaint customers are tracked as one case load.
 - **Workflow Insights** (`/insights`) runs deterministic bottleneck analysis on every load —
   aging queue, unowned complaints, first-response lag, workload imbalance, handoff churn,
   slowest category, unreviewed AI tags — and pairs each finding with a concrete
