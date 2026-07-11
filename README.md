@@ -52,13 +52,23 @@ Open http://localhost:3000.
 
 ### Database
 
-Apply `supabase/migrations/0001_init.sql` to your Supabase project (SQL editor, or `supabase db
-push`) before running the app — it creates `categories`, `complaints`, `audit_logs`, and seed rows.
+Apply the migrations in `supabase/migrations/` **in order** to your Supabase project (SQL editor,
+or `supabase db push`) before running the app:
+
+1. `0001_init.sql` — creates `categories`, `complaints`, `audit_logs`, and seed rows
+2. `0002_lock_down.sql` — replaces the permissive v1 policies with owner-scoped RLS
+
+## Auth & data isolation
+
+- **No login needed for the demo** — anonymous visitors get the full app against a shared public
+  demo pool (the seed data plus anything submitted without signing in).
+- **Sign up for a private workspace** (`/login`) — authenticated agents see only their own
+  complaints (`auth.uid() = user_id` RLS on every table); the demo pool and other agents' data
+  are invisible to them, and vice versa.
+- `audit_logs` is insert-only (immutable trail) and `categories` is read-only shared taxonomy —
+  enforced by RLS, not just application code.
 
 ## Notes
 
-- v1 has no login wall by design — the homepage is the working app with seed data, so it's
-  demoable and screenshot-able. Auth + per-agent data isolation is a later "Lock it down" sprint
-  (see [docs/TASKS.md](docs/TASKS.md)).
 - Secrets (`SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`) are only ever read in `app/api/` routes,
-  never in client components.
+  never in client components. The browser only sees the public Supabase URL + publishable key.
