@@ -69,6 +69,21 @@ or `supabase db push`) before running the app:
 - `audit_logs` is insert-only (immutable trail) and `categories` is read-only shared taxonomy —
   enforced by RLS, not just application code.
 
+## Browser & OS support
+
+Works on any operating system (Windows, macOS, Linux, iOS, Android) in a browser that meets the
+stack's floor — set by Tailwind CSS v4 and declared in `browserslist` in [package.json](package.json):
+
+| Browser | Minimum version |
+|---|---|
+| Chrome / Edge (desktop + Android) | 111+ (Mar 2023) |
+| Firefox | 128+ (Jul 2024) |
+| Safari (macOS + iOS) | 16.4+ (Mar 2023) |
+
+The layout is responsive from 375 px phones to desktop, timestamps render in a fixed UTC format
+so server and client always agree regardless of the visitor's locale or timezone, and no
+JavaScript or CSS features newer than the floor above are used in app code.
+
 ## Notes
 
 - Secrets (`SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`) are only ever read in `app/api/` routes,

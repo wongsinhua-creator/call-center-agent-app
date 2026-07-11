@@ -4,6 +4,7 @@ import { getComplaints } from "@/lib/data/complaints";
 import { StatusBadge, PriorityBadge, CategoryChip, ConfidenceBadge } from "@/components/badges";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorBanner } from "@/components/ErrorBanner";
+import { formatDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,7 @@ export default async function ComplaintListPage() {
                 <div className="flex items-baseline justify-between gap-4">
                   <p className="font-medium text-neutral-900">{c.caller_name}</p>
                   <p className="text-xs text-neutral-400 whitespace-nowrap">
-                    {new Date(c.created_at).toLocaleString()}
+                    {formatDateTime(c.created_at)}
                   </p>
                 </div>
                 <p className="text-sm text-neutral-500 mt-0.5 line-clamp-1">

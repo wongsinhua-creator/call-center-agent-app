@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { StatusBadge, PriorityBadge, CategoryChip, ConfidenceBadge } from "@/components/badges";
+import { formatDateTime } from "@/lib/format";
 import type { AuditLog, Category, ComplaintWithCategory, Status } from "@/lib/types";
 
 const CHANNEL_LABELS: Record<string, string> = { phone: "Phone", chat: "Chat", email: "Email" };
@@ -144,7 +145,7 @@ export function ComplaintDetail({
         <p className="text-sm text-neutral-500 mt-0.5">
           {CHANNEL_LABELS[complaint.channel] ?? complaint.channel}
           {complaint.caller_phone ? ` · ${complaint.caller_phone}` : ""} ·{" "}
-          {new Date(complaint.created_at).toLocaleString()}
+          {formatDateTime(complaint.created_at)}
         </p>
         <p className="text-sm text-neutral-500 mt-0.5">
           Handling agent:{" "}
@@ -273,7 +274,7 @@ export function ComplaintDetail({
           className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
         />
         {complaint.resolved_at && (
-          <p className="text-xs text-neutral-400">Resolved {new Date(complaint.resolved_at).toLocaleString()}</p>
+          <p className="text-xs text-neutral-400">Resolved {formatDateTime(complaint.resolved_at)}</p>
         )}
         {notesError && <p className="text-xs text-red-600">{notesError}</p>}
         <div className="flex items-center gap-2">
@@ -327,7 +328,7 @@ export function ComplaintDetail({
                   {!log.old_value && log.new_value ? `: ${log.new_value}` : ""}
                   <span className="text-neutral-400"> · {log.actor_name ?? log.actor}</span>
                 </p>
-                <p className="text-xs text-neutral-400">{new Date(log.created_at).toLocaleString()}</p>
+                <p className="text-xs text-neutral-400">{formatDateTime(log.created_at)}</p>
               </li>
             ))}
           </ol>

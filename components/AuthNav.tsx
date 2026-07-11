@@ -16,7 +16,7 @@ export async function AuthNav() {
 
   if (!email) {
     return (
-      <Link href="/login" className="text-neutral-600 hover:text-neutral-900">
+      <Link href="/login" className="text-neutral-600 hover:text-neutral-900 whitespace-nowrap">
         Sign in
       </Link>
     );

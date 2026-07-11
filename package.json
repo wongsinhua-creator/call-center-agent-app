@@ -26,5 +26,14 @@
     "tailwindcss": "^4.0.0",
     "typescript": "^5"
   },
-  "packageManager": "bun@1.1.30"
+  "packageManager": "bun@1.1.30",
+  "browserslist": [
+    "chrome >= 111",
+    "edge >= 111",
+    "firefox >= 128",
+    "safari >= 16.4",
+    "ios_saf >= 16.4",
+    "and_chr >= 111",
+    "not dead"
+  ]
 }
