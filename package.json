@@ -27,6 +27,11 @@
     "typescript": "^5"
   },
   "packageManager": "bun@1.1.30",
+  "overrides": {
+    "next": {
+      "postcss": "^8.5.16"
+    }
+  },
   "browserslist": [
     "chrome >= 111",
     "edge >= 111",

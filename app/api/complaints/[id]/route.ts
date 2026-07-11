@@ -39,7 +39,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     data: { user },
   } = await supabase.auth.getUser();
   const newHandledBy =
-    typeof body.handled_by === "string" ? body.handled_by.trim() || null : undefined;
+    typeof body.handled_by === "string" ? body.handled_by.trim().slice(0, 100) || null : undefined;
   const actorName =
     user?.email ?? newHandledBy ?? current.handled_by ?? "anonymous";
 
@@ -67,7 +67,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (body.status === "resolved") {
       updates.resolved_at = new Date().toISOString();
       if (typeof body.resolution_notes === "string") {
-        updates.resolution_notes = body.resolution_notes.trim();
+        updates.resolution_notes = body.resolution_notes.trim().slice(0, 5000);
       }
     } else if (current.status === "resolved") {
       updates.resolved_at = null;
@@ -83,7 +83,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     });
   } else if (typeof body.resolution_notes === "string" && current.status === "resolved") {
     // Editing notes on an already-resolved complaint, no status transition.
-    updates.resolution_notes = body.resolution_notes.trim();
+    updates.resolution_notes = body.resolution_notes.trim().slice(0, 5000);
   }
 
   // Category override via dropdown.

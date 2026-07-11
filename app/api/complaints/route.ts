@@ -23,9 +23,17 @@ export async function POST(request: Request) {
 
   const errors: Record<string, string> = {};
   if (!callerName) errors.caller_name = "Caller name is required.";
+  if (callerName.length > 100) errors.caller_name = "Caller name must be 100 characters or fewer.";
+  if (callerPhone && callerPhone.length > 30) errors.caller_phone = "Phone must be 30 characters or fewer.";
   if (!CHANNELS.includes(channel)) errors.channel = "Select a valid channel.";
   if (description.length < MIN_DESCRIPTION_LENGTH) {
     errors.description = `Description must be at least ${MIN_DESCRIPTION_LENGTH} characters.`;
+  }
+  if (description.length > 5000) {
+    errors.description = "Description must be 5000 characters or fewer.";
+  }
+  if (categoryId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(categoryId)) {
+    errors.category_id = "Invalid category.";
   }
   if (Object.keys(errors).length > 0) {
     return NextResponse.json({ error: "Validation failed", fields: errors }, { status: 400 });
@@ -39,7 +47,9 @@ export async function POST(request: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   const ownerId = user?.id ?? DEMO_USER_ID;
-  const handledBy = body.handled_by ? String(body.handled_by).trim() || null : null;
+  const handledBy = body.handled_by
+    ? String(body.handled_by).trim().slice(0, 100) || null
+    : null;
   // Who acted: the signed-in agent, else the agent who took the call (demo mode).
   const actorName = user?.email ?? handledBy ?? "anonymous";
 
