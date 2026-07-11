@@ -34,6 +34,29 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const updates: Record<string, unknown> = {};
   const auditEntries: Parameters<typeof writeAuditLog>[1][] = [];
 
+  // Who acted: the signed-in agent, else the handling agent on record (demo mode).
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const newHandledBy =
+    typeof body.handled_by === "string" ? body.handled_by.trim() || null : undefined;
+  const actorName =
+    user?.email ?? newHandledBy ?? current.handled_by ?? "anonymous";
+
+  // Handling-agent assignment / reassignment / unassignment.
+  if (newHandledBy !== undefined && newHandledBy !== current.handled_by) {
+    updates.handled_by = newHandledBy;
+    auditEntries.push({
+      complaintId: id,
+      userId: current.user_id,
+      action: "assigned",
+      actor: "agent",
+      actorName,
+      oldValue: current.handled_by ?? "unassigned",
+      newValue: newHandledBy ?? "unassigned",
+    });
+  }
+
   // Status change (dropdown save / Mark Resolved). Idempotent: re-submitting
   // the same status is a no-op, so double-clicks never write duplicate rows.
   if (typeof body.status === "string" && body.status !== current.status) {
@@ -54,6 +77,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       userId: current.user_id,
       action: "status_change",
       actor: "agent",
+      actorName,
       oldValue: current.status,
       newValue: body.status,
     });
@@ -86,6 +110,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       userId: current.user_id,
       action: "category_override",
       actor: "agent",
+      actorName,
       oldValue: oldCategory?.name ?? "none",
       newValue: newCategory.name,
     });

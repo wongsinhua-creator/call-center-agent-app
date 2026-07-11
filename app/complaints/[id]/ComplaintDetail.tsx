@@ -17,6 +17,7 @@ const AUDIT_LABELS: Record<string, string> = {
   status_change: "Status changed",
   ai_tagged: "AI tagged",
   category_override: "Category changed",
+  assigned: "Handling agent",
 };
 
 export function ComplaintDetail({
@@ -42,6 +43,10 @@ export function ComplaintDetail({
   const [notesSaving, setNotesSaving] = useState(false);
   const [notesError, setNotesError] = useState<string | null>(null);
   const [confirmingResolve, setConfirmingResolve] = useState(false);
+
+  const [agentName, setAgentName] = useState(complaint.handled_by ?? "");
+  const [agentSaving, setAgentSaving] = useState(false);
+  const [agentError, setAgentError] = useState<string | null>(null);
 
   async function patch(body: Record<string, unknown>) {
     const res = await fetch(`/api/complaints/${complaint.id}`, {
@@ -98,6 +103,20 @@ export function ComplaintDetail({
     }
   }
 
+  async function saveAgent() {
+    if (agentSaving || agentName.trim() === (complaint.handled_by ?? "")) return;
+    setAgentSaving(true);
+    setAgentError(null);
+    try {
+      await patch({ handled_by: agentName });
+      router.refresh();
+    } catch (err) {
+      setAgentError(err instanceof Error ? err.message : "Failed to update handling agent.");
+    } finally {
+      setAgentSaving(false);
+    }
+  }
+
   async function markResolved() {
     setNotesSaving(true);
     setNotesError(null);
@@ -126,6 +145,12 @@ export function ComplaintDetail({
           {CHANNEL_LABELS[complaint.channel] ?? complaint.channel}
           {complaint.caller_phone ? ` · ${complaint.caller_phone}` : ""} ·{" "}
           {new Date(complaint.created_at).toLocaleString()}
+        </p>
+        <p className="text-sm text-neutral-500 mt-0.5">
+          Handling agent:{" "}
+          <span className={complaint.handled_by ? "text-neutral-900 font-medium" : "text-neutral-400"}>
+            {complaint.handled_by ?? "unassigned"}
+          </span>
         </p>
       </div>
 
@@ -161,6 +186,30 @@ export function ComplaintDetail({
         {complaint.category_ai_source && (
           <p className="text-xs text-neutral-400">Source: {complaint.category_ai_source}</p>
         )}
+      </section>
+
+      <section className="bg-white border border-neutral-200 rounded-lg p-5 space-y-3">
+        <h2 className="text-sm font-medium text-neutral-500">Handling Agent</h2>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={agentName}
+            onChange={(e) => setAgentName(e.target.value)}
+            placeholder="Agent name (leave blank to unassign)"
+            className="flex-1 rounded-md border border-neutral-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+          />
+          <button
+            onClick={saveAgent}
+            disabled={agentSaving || agentName.trim() === (complaint.handled_by ?? "")}
+            className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-sm hover:bg-neutral-700 disabled:opacity-40"
+          >
+            {agentSaving ? "Saving…" : complaint.handled_by ? "Reassign" : "Assign"}
+          </button>
+        </div>
+        <p className="text-xs text-neutral-400">
+          Every assignment is recorded in the audit log below.
+        </p>
+        {agentError && <p className="text-xs text-red-600">{agentError}</p>}
       </section>
 
       <section className="bg-white border border-neutral-200 rounded-lg p-5 space-y-3">
@@ -276,7 +325,7 @@ export function ComplaintDetail({
                   {AUDIT_LABELS[log.action] ?? log.action}
                   {log.old_value && log.new_value ? `: ${log.old_value} → ${log.new_value}` : ""}
                   {!log.old_value && log.new_value ? `: ${log.new_value}` : ""}
-                  <span className="text-neutral-400"> · {log.actor}</span>
+                  <span className="text-neutral-400"> · {log.actor_name ?? log.actor}</span>
                 </p>
                 <p className="text-xs text-neutral-400">{new Date(log.created_at).toLocaleString()}</p>
               </li>

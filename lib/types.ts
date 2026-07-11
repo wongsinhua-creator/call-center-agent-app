@@ -6,7 +6,8 @@ export type AuditAction =
   | "created"
   | "status_change"
   | "ai_tagged"
-  | "category_override";
+  | "category_override"
+  | "assigned";
 export type Actor = "agent" | "system";
 
 export interface Category {
@@ -26,6 +27,7 @@ export interface Complaint {
   description: string;
   status: Status;
   priority: Priority;
+  handled_by: string | null;
   category_id: string | null;
   category_ai: string | null;
   category_ai_source: string | null;
@@ -50,6 +52,7 @@ export interface AuditLog {
   complaint_id: string;
   action: AuditAction;
   actor: Actor;
+  actor_name: string | null;
   old_value: string | null;
   new_value: string | null;
   created_at: string;

@@ -39,6 +39,9 @@ export async function POST(request: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   const ownerId = user?.id ?? DEMO_USER_ID;
+  const handledBy = body.handled_by ? String(body.handled_by).trim() || null : null;
+  // Who acted: the signed-in agent, else the agent who took the call (demo mode).
+  const actorName = user?.email ?? handledBy ?? "anonymous";
 
   let categoryAi: string | null = null;
   let categoryAiSource: string | null = null;
@@ -78,6 +81,7 @@ export async function POST(request: Request) {
       caller_phone: callerPhone,
       channel,
       description,
+      handled_by: handledBy,
       status: "open",
       priority: priorityFromUrgency(urgencyScore),
       category_id: resolvedCategoryId,
@@ -103,8 +107,20 @@ export async function POST(request: Request) {
     userId: ownerId,
     action: "created",
     actor: "agent",
+    actorName,
     newValue: "open",
   });
+
+  if (handledBy) {
+    await writeAuditLog(supabase, {
+      complaintId: inserted.id,
+      userId: ownerId,
+      action: "assigned",
+      actor: "agent",
+      actorName,
+      newValue: handledBy,
+    });
+  }
 
   if (categoryAi) {
     await writeAuditLog(supabase, {
@@ -112,6 +128,7 @@ export async function POST(request: Request) {
       userId: ownerId,
       action: "ai_tagged",
       actor: "system",
+      actorName: "AI classifier",
       newValue: `${categoryAi} (urgency ${urgencyScore}, confidence ${categoryAiConfidence})`,
     });
   }

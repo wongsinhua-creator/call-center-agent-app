@@ -68,6 +68,15 @@ export default async function ComplaintListPage() {
                 <p className="text-sm text-neutral-500 mt-0.5 line-clamp-1">
                   {CHANNEL_LABELS[c.channel] ?? c.channel} · {c.description}
                 </p>
+                <p className="text-xs mt-1">
+                  {c.handled_by ? (
+                    <span className="text-neutral-600">
+                      Handling: <span className="font-medium text-neutral-800">{c.handled_by}</span>
+                    </span>
+                  ) : (
+                    <span className="text-neutral-400">Unassigned</span>
+                  )}
+                </p>
               </Link>
             </li>
           ))}

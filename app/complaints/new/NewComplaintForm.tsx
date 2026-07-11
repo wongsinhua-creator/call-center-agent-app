@@ -13,6 +13,7 @@ export function NewComplaintForm({ categories }: { categories: Category[] }) {
   const [channel, setChannel] = useState("phone");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [handledBy, setHandledBy] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -43,6 +44,7 @@ export function NewComplaintForm({ categories }: { categories: Category[] }) {
           channel,
           description: description.trim(),
           category_id: categoryId || null,
+          handled_by: handledBy.trim() || null,
         }),
       });
 
@@ -90,6 +92,19 @@ export function NewComplaintForm({ categories }: { categories: Category[] }) {
           onChange={(e) => setCallerPhone(e.target.value)}
           className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
           placeholder="555-0100"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-neutral-700 mb-1">
+          Your name <span className="text-neutral-400 font-normal">(the agent taking this call)</span>
+        </label>
+        <input
+          type="text"
+          value={handledBy}
+          onChange={(e) => setHandledBy(e.target.value)}
+          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+          placeholder="e.g. Sam Rivera"
         />
       </div>
 

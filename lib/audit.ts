@@ -8,6 +8,7 @@ export async function writeAuditLog(
     userId: string;
     action: AuditAction;
     actor: Actor;
+    actorName?: string | null;
     oldValue?: string | null;
     newValue?: string | null;
   },
@@ -17,6 +18,7 @@ export async function writeAuditLog(
     user_id: params.userId,
     action: params.action,
     actor: params.actor,
+    actor_name: params.actorName ?? null,
     old_value: params.oldValue ?? null,
     new_value: params.newValue ?? null,
   });
