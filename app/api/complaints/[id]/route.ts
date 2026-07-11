@@ -2,11 +2,19 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { writeAuditLog } from "@/lib/audit";
 import { closeOpenSegments, openSegment } from "@/lib/handlers";
+import { withErrorHandling } from "@/lib/api";
 import type { Status } from "@/lib/types";
 
 const STATUSES: Status[] = ["open", "in_progress", "resolved"];
 
-export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+// Hard platform ceiling: the function is killed after 10s, so no code path
+// (loop or hang) can run past the response deadline.
+export const maxDuration = 10;
+
+export const PATCH = withErrorHandling(async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const { id } = await params;
 
   let body: Record<string, unknown>;
@@ -153,4 +161,4 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   return NextResponse.json({ ok: true });
-}
+});

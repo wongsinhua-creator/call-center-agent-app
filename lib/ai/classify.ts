@@ -1,4 +1,5 @@
 import { redactPii } from "./pii";
+import { withRetry } from "@/lib/guard";
 
 export const CATEGORY_NAMES = ["Billing", "Technical", "Service Quality"] as const;
 export type CategoryName = (typeof CATEGORY_NAMES)[number];
@@ -56,8 +57,21 @@ async function openaiClassify(description: string, channel: string): Promise<Cla
   const baseline = ruleBasedClassify(description, channel);
   const safeDescription = redactPii(description).slice(0, 2000);
 
+  // Each attempt aborts after 3s; withRetry caps the whole thing at 5
+  // attempts within an 8s deadline, then the rule-based fallback takes over.
+  return withRetry(async () => openaiAttempt(apiKey, baseline, safeDescription), {
+    maxAttempts: 5,
+    deadlineMs: 8000,
+  });
+}
+
+async function openaiAttempt(
+  apiKey: string,
+  baseline: ClassifyResult,
+  safeDescription: string,
+): Promise<ClassifyResult> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
+  const timeout = setTimeout(() => controller.abort(), 3000);
 
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {

@@ -46,6 +46,8 @@ export function NewComplaintForm({ categories }: { categories: Category[] }) {
           category_id: categoryId || null,
           handled_by: handledBy.trim() || null,
         }),
+        // Never hang the UI: abort after the 10s response deadline.
+        signal: AbortSignal.timeout(10_000),
       });
 
       if (!res.ok) {
@@ -58,8 +60,14 @@ export function NewComplaintForm({ categories }: { categories: Category[] }) {
 
       const { id } = await res.json();
       router.push(`/complaints/${id}`);
-    } catch {
-      setSubmitError("Network error — please try again.");
+    } catch (err) {
+      const timedOut =
+        err instanceof DOMException && (err.name === "TimeoutError" || err.name === "AbortError");
+      setSubmitError(
+        timedOut
+          ? "The request timed out after 10 seconds. Please try again."
+          : "Network error — please try again.",
+      );
       setSubmitting(false);
     }
   }

@@ -52,11 +52,21 @@ export function ComplaintDetail({
   const [agentError, setAgentError] = useState<string | null>(null);
 
   async function patch(body: Record<string, unknown>) {
-    const res = await fetch(`/api/complaints/${complaint.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    let res: Response;
+    try {
+      res = await fetch(`/api/complaints/${complaint.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        // Never hang the UI: abort after the 10s response deadline.
+        signal: AbortSignal.timeout(10_000),
+      });
+    } catch (err) {
+      if (err instanceof DOMException && (err.name === "TimeoutError" || err.name === "AbortError")) {
+        throw new Error("The request timed out after 10 seconds. Please try again.");
+      }
+      throw new Error("Network error — check your connection and try again.");
+    }
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       throw new Error(data.error ?? "Request failed");

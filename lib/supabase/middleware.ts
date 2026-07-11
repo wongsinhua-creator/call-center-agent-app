@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { timeoutFetch } from "@/lib/guard";
 
 export async function updateSession(request: NextRequest) {
   const supabaseResponse = NextResponse.next({ request });
@@ -18,6 +19,9 @@ export async function updateSession(request: NextRequest) {
   try {
     let response = supabaseResponse;
     const supabase = createServerClient(url, anonKey, {
+      // Middleware runs on every request — the session refresh gets a short
+      // budget so a slow auth server can never stall page loads.
+      global: { fetch: timeoutFetch(5000) },
       cookies: {
         getAll() {
           return request.cookies.getAll();

@@ -4,11 +4,16 @@ import { classifyComplaint, priorityFromUrgency } from "@/lib/ai/classify";
 import { writeAuditLog } from "@/lib/audit";
 import { openSegment } from "@/lib/handlers";
 import { DEMO_USER_ID } from "@/lib/demo";
+import { withErrorHandling } from "@/lib/api";
 
 const CHANNELS = ["phone", "chat", "email"];
 const MIN_DESCRIPTION_LENGTH = 10;
 
-export async function POST(request: Request) {
+// Hard platform ceiling: the function is killed after 10s, so no code path
+// (loop or hang) can run past the response deadline.
+export const maxDuration = 10;
+
+export const POST = withErrorHandling(async function POST(request: Request) {
   let body: Record<string, unknown>;
   try {
     body = await request.json();
@@ -150,4 +155,4 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ id: inserted.id }, { status: 201 });
-}
+});
