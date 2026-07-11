@@ -37,6 +37,11 @@ A polished, demoable call-center complaint tracker with AI-powered tagging and p
 - Each complaint tracks its **handling agent** — set when the call is taken or assigned/reassigned
   from the detail page. Every status change, category override, assignment, and AI tag writes a
   row to `audit_logs` **naming the acting agent**, shown as a timeline on the detail page.
+- Complaints can be **handed between agents**: each assignment opens an immutable handling
+  segment (`complaint_handlers`) and each handoff or resolution closes one, so the detail page
+  shows exactly **who handled which portion** and for how long.
+- The dashboard measures **closure KPIs**: closure rate, average / fastest / slowest time to
+  close, and a per-agent performance table (portions handled, complaints closed, avg close time).
 - The dashboard aggregates live counts, a category breakdown, and a top-5 urgency queue.
 
 See [docs/](docs/) for the full PRD, architecture, data model, and sprint plan this was built from.
