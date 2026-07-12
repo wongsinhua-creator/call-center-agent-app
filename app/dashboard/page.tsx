@@ -42,13 +42,13 @@ export default async function DashboardPage() {
           <section className="bg-white border border-neutral-200 rounded-lg p-5 space-y-3">
             <h2 className="text-sm font-medium text-neutral-500">Closure KPIs</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-              <div>
+              <div title="Resolved complaints ÷ all complaints, all time.">
                 <p className="text-xs text-neutral-500">Closure rate</p>
                 <p className="text-xl font-semibold text-neutral-900">
                   {Math.round(stats.closure.closureRate * 100)}%
                 </p>
               </div>
-              <div>
+              <div title="Mean of created → resolved across resolved complaints, all time.">
                 <p className="text-xs text-neutral-500">Avg time to close</p>
                 <p className="text-xl font-semibold text-neutral-900">
                   {stats.closure.avgCloseMs !== null ? formatDuration(stats.closure.avgCloseMs) : "—"}
@@ -67,6 +67,12 @@ export default async function DashboardPage() {
                 </p>
               </div>
             </div>
+            <p className="text-xs text-neutral-400">
+              All-time figures over {stats.totalOpen + stats.totalInProgress + stats.totalResolved}{" "}
+              complaint{stats.totalOpen + stats.totalInProgress + stats.totalResolved === 1 ? "" : "s"}; time-to-close
+              is based on {stats.totalResolved} closure{stats.totalResolved === 1 ? "" : "s"}. Closure rate =
+              resolved ÷ total; time to close = created → resolved.
+            </p>
           </section>
 
           {stats.agentKpis.length > 0 && (
@@ -77,9 +83,15 @@ export default async function DashboardPage() {
                   <thead>
                     <tr className="text-left text-xs text-neutral-500">
                       <th className="py-1.5 pr-4 font-medium">Agent</th>
-                      <th className="py-1.5 pr-4 font-medium">Assignments handled</th>
-                      <th className="py-1.5 pr-4 font-medium">Complaints closed</th>
-                      <th className="py-1.5 font-medium">Avg time to close</th>
+                      <th className="py-1.5 pr-4 font-medium" title="Handling segments this agent has owned, including handoffs.">
+                        Assignments handled
+                      </th>
+                      <th className="py-1.5 pr-4 font-medium" title="Complaints this agent held when they were resolved.">
+                        Complaints closed
+                      </th>
+                      <th className="py-1.5 font-medium" title="Mean created → resolved for that agent's closures.">
+                        Avg time to close
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
