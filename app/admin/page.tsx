@@ -18,15 +18,26 @@ export default async function AdminPage() {
     return (
       <div className="max-w-md mx-auto text-center space-y-3 py-12">
         <h1 className="text-2xl font-semibold tracking-tight">Administrators only</h1>
-        <p className="text-sm text-neutral-500">
-          This area manages call-agent accounts. Sign in with an administrator account to continue.
-        </p>
-        <Link
-          href="/login"
-          className="inline-block rounded-md bg-neutral-900 text-white px-4 py-2 text-sm hover:bg-neutral-700"
-        >
-          Sign in
-        </Link>
+        {user ? (
+          <p className="text-sm text-neutral-500">
+            You are signed in as <span className="font-medium">{user.email}</span>, which is an
+            agent account. Agent accounts cannot access administration — sign out, then sign in
+            with an administrator account.
+          </p>
+        ) : (
+          <>
+            <p className="text-sm text-neutral-500">
+              This area manages call-agent accounts. Sign in with an administrator account to
+              continue.
+            </p>
+            <Link
+              href="/login"
+              className="inline-block rounded-md bg-neutral-900 text-white px-4 py-2 text-sm hover:bg-neutral-700"
+            >
+              Sign in
+            </Link>
+          </>
+        )}
       </div>
     );
   }

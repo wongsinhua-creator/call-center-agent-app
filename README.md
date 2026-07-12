@@ -74,9 +74,11 @@ or `supabase db push`) before running the app:
 
 - **No login needed for the demo** — anonymous visitors get the full app against a shared public
   demo pool (the seed data plus anything submitted without signing in).
-- **Sign up for a private workspace** (`/login`) — authenticated agents see only their own
+- **Sign in for a private workspace** (`/login`) — authenticated agents see only their own
   complaints (`auth.uid() = user_id` RLS on every table); the demo pool and other agents' data
-  are invisible to them, and vice versa.
+  are invisible to them, and vice versa. There is no self-service registration: agent accounts
+  are created, updated, disabled (for a period, or indefinitely), and re-enabled by
+  administrators at `/admin`.
 - `audit_logs` is insert-only (immutable trail) and `categories` is read-only shared taxonomy —
   enforced by RLS, not just application code.
 
