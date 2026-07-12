@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getComplaintQueue, type QueueQuery } from "@/lib/data/complaints";
+import { getAgentNames, getComplaintQueue, type QueueQuery } from "@/lib/data/complaints";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { QueueList } from "./QueueList";
+import { SaveViewButton } from "./SaveViewButton";
 
 export const dynamic = "force-dynamic";
 
@@ -18,14 +19,16 @@ function parseQuery(params: Record<string, string | string[] | undefined>): Queu
   const sort = SORTS.includes(params.sort as (typeof SORTS)[number])
     ? (params.sort as QueueQuery["sort"])
     : "urgency";
+  const agent = typeof params.agent === "string" ? params.agent.trim().slice(0, 100) : undefined;
   const page = Math.max(1, Number.parseInt(String(params.page ?? "1"), 10) || 1);
-  return { q: q || undefined, status, sort, page };
+  return { q: q || undefined, status, agent: agent || undefined, sort, page };
 }
 
 function pageHref(query: QueueQuery, page: number): string {
   const p = new URLSearchParams();
   if (query.q) p.set("q", query.q);
   if (query.status) p.set("status", query.status);
+  if (query.agent) p.set("agent", query.agent);
   if (query.sort && query.sort !== "urgency") p.set("sort", query.sort);
   if (page > 1) p.set("page", String(page));
   const s = p.toString();
@@ -41,8 +44,12 @@ export default async function ComplaintListPage({
   const supabase = await createClient();
 
   let result;
+  let agentNames: string[] = [];
   try {
-    result = await getComplaintQueue(supabase, query);
+    [result, agentNames] = await Promise.all([
+      getComplaintQueue(supabase, query),
+      getAgentNames(supabase),
+    ]);
   } catch {
     return (
       <div className="space-y-4">
@@ -52,7 +59,7 @@ export default async function ComplaintListPage({
     );
   }
 
-  const filtered = Boolean(query.q || query.status);
+  const filtered = Boolean(query.q || query.status || query.agent);
 
   return (
     <div className="space-y-6">
@@ -104,6 +111,25 @@ export default async function ComplaintListPage({
           </select>
         </div>
         <div>
+          <label htmlFor="queue-agent" className="block text-xs font-medium text-neutral-600 mb-1">
+            Call agent
+          </label>
+          <select
+            id="queue-agent"
+            name="agent"
+            defaultValue={query.agent ?? ""}
+            className="min-h-11 rounded-md border border-neutral-300 px-3 py-2 text-sm bg-white"
+          >
+            <option value="">All agents</option>
+            <option value="unassigned">Unassigned</option>
+            {agentNames.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
           <label htmlFor="queue-sort" className="block text-xs font-medium text-neutral-600 mb-1">
             Sort by
           </label>
@@ -136,11 +162,14 @@ export default async function ComplaintListPage({
         </div>
       </form>
 
-      <p className="text-sm text-neutral-500" role="status">
-        {result.total} complaint{result.total === 1 ? "" : "s"}
-        {filtered ? " match" : ""}
-        {result.pageCount > 1 ? ` · page ${result.page} of ${result.pageCount}` : ""}
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-neutral-500" role="status">
+          {result.total} complaint{result.total === 1 ? "" : "s"}
+          {filtered ? " match" : ""}
+          {result.pageCount > 1 ? ` · page ${result.page} of ${result.pageCount}` : ""}
+        </p>
+        <SaveViewButton query={pageHref(query, 1).split("?")[1] ?? ""} />
+      </div>
 
       {result.complaints.length === 0 ? (
         filtered ? (

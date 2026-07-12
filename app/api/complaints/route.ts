@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { classifyComplaint, priorityFromUrgency } from "@/lib/ai/classify";
 import { writeAuditLog } from "@/lib/audit";
 import { openSegment } from "@/lib/handlers";
-import { DEMO_USER_ID } from "@/lib/demo";
 import { withErrorHandling } from "@/lib/api";
 
 const CHANNELS = ["phone", "chat", "email"];
@@ -47,12 +46,14 @@ export const POST = withErrorHandling(async function POST(request: Request) {
 
   const supabase = await createClient();
 
-  // Owner scoping: authenticated agents own their rows; anonymous submissions
-  // land in the public demo pool. RLS enforces both (0002_lock_down.sql).
+  // Login wall: every function requires a signed-in user (0005_team_queue.sql).
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const ownerId = user?.id ?? DEMO_USER_ID;
+  if (!user) {
+    return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  }
+  const ownerId = user.id;
   const handledBy = body.handled_by
     ? String(body.handled_by).trim().slice(0, 100) || null
     : null;

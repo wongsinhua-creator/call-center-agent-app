@@ -5,6 +5,7 @@ import { StatusBadge, PriorityBadge, CategoryChip } from "@/components/badges";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { formatDuration } from "@/lib/format";
+import { SavedViews, type SavedFilter } from "./SavedViews";
 
 export const dynamic = "force-dynamic";
 
@@ -12,8 +13,14 @@ export default async function DashboardPage() {
   const supabase = await createClient();
 
   let stats;
+  let savedFilters: SavedFilter[] = [];
   try {
     stats = await getDashboardStats(supabase);
+    const { data: sf } = await supabase
+      .from("saved_filters")
+      .select("id, name, query")
+      .order("created_at", { ascending: false });
+    savedFilters = sf ?? [];
   } catch {
     return (
       <div className="space-y-4">
@@ -28,6 +35,11 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+
+      <section className="bg-white border border-neutral-200 rounded-lg p-5 space-y-3">
+        <h2 className="text-sm font-medium text-neutral-500">My Saved Views</h2>
+        <SavedViews filters={savedFilters} />
+      </section>
 
       {totalAll === 0 ? (
         <EmptyState title="No complaints yet" hint="Once complaints come in, stats will show up here." />

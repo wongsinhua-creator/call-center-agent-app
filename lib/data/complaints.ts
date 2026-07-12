@@ -22,6 +22,7 @@ export async function getComplaints(supabase: SupabaseClient): Promise<Complaint
 export interface QueueQuery {
   q?: string; // matches caller name or description
   status?: "open" | "in_progress" | "resolved";
+  agent?: string; // handling agent name, or "unassigned"
   sort?: "urgency" | "newest" | "oldest";
   page?: number; // 1-based
   pageSize?: number;
@@ -49,6 +50,8 @@ export async function getComplaintQueue(
     if (term) builder = builder.or(`caller_name.ilike.%${term}%,description.ilike.%${term}%`);
   }
   if (query.status) builder = builder.eq("status", query.status);
+  if (query.agent === "unassigned") builder = builder.is("handled_by", null);
+  else if (query.agent) builder = builder.eq("handled_by", query.agent.slice(0, 100));
 
   if (query.sort === "newest") builder = builder.order("created_at", { ascending: false });
   else if (query.sort === "oldest") builder = builder.order("created_at", { ascending: true });
@@ -132,6 +135,16 @@ export interface DashboardStats {
   priorityQueue: ComplaintWithCategory[];
   closure: ClosureKpis;
   agentKpis: AgentKpi[];
+}
+
+// Distinct handling-agent names for the queue's agent filter.
+export async function getAgentNames(supabase: SupabaseClient): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("complaints")
+    .select("handled_by")
+    .not("handled_by", "is", null);
+  if (error) throw error;
+  return [...new Set((data ?? []).map((r) => r.handled_by as string))].sort();
 }
 
 export async function getDashboardStats(supabase: SupabaseClient): Promise<DashboardStats> {

@@ -26,6 +26,14 @@ export const PATCH = withErrorHandling(async function PATCH(
 
   const supabase = await createClient();
 
+  // Login wall: every function requires a signed-in user.
+  const {
+    data: { user: sessionUser },
+  } = await supabase.auth.getUser();
+  if (!sessionUser) {
+    return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  }
+
   const { data: current, error: fetchError } = await supabase
     .from("complaints")
     .select("*")
@@ -43,10 +51,7 @@ export const PATCH = withErrorHandling(async function PATCH(
   const updates: Record<string, unknown> = {};
   const auditEntries: Parameters<typeof writeAuditLog>[1][] = [];
 
-  // Who acted: the signed-in agent, else the handling agent on record (demo mode).
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = sessionUser;
   const newHandledBy =
     typeof body.handled_by === "string" ? body.handled_by.trim().slice(0, 100) || null : undefined;
   const actorName =

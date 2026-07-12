@@ -38,7 +38,10 @@ export const POST = withErrorHandling(async function POST(request: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const actorName = user?.email ?? handledBy;
+  if (!user) {
+    return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  }
+  const actorName = user.email ?? handledBy;
 
   let updated = 0;
   const failed: string[] = [];

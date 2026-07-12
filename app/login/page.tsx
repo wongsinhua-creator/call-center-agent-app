@@ -16,8 +16,8 @@ export default async function LoginPage() {
       <div className="text-center space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Sign In</h1>
         <p className="text-sm text-neutral-500">
-          Agents get a private workspace; administrators can also manage agent accounts.
-          No account is needed to try the public demo.
+          Sign in to work the complaint queue. Agents share the team queue and can save
+          personal views; administrators also manage agent accounts.
         </p>
       </div>
       <AuthForm />
