@@ -77,7 +77,7 @@ export default async function DashboardPage() {
                   <thead>
                     <tr className="text-left text-xs text-neutral-500">
                       <th className="py-1.5 pr-4 font-medium">Agent</th>
-                      <th className="py-1.5 pr-4 font-medium">Portions handled</th>
+                      <th className="py-1.5 pr-4 font-medium">Assignments handled</th>
                       <th className="py-1.5 pr-4 font-medium">Complaints closed</th>
                       <th className="py-1.5 font-medium">Avg time to close</th>
                     </tr>

@@ -58,6 +58,12 @@ const REVIEW_STYLES: Record<ReviewStatus, string> = {
   overridden: "bg-neutral-50 text-neutral-600 ring-1 ring-inset ring-neutral-200",
 };
 
+const REVIEW_EXPLAIN: Record<ReviewStatus, string> = {
+  unreviewed: "no agent has reviewed the suggestion yet",
+  confirmed: "an agent confirmed the suggestion",
+  overridden: "an agent overrode the suggestion",
+};
+
 export function ConfidenceBadge({
   confidence,
   reviewStatus,
@@ -67,14 +73,23 @@ export function ConfidenceBadge({
 }) {
   if (confidence === null) {
     return (
-      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-neutral-50 text-neutral-400 ring-1 ring-inset ring-neutral-200">
+      <span
+        title="The AI classifier did not produce a suggestion for this complaint."
+        className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-neutral-50 text-neutral-400 ring-1 ring-inset ring-neutral-200"
+      >
         AI: unavailable
       </span>
     );
   }
+  const pct = Math.round(confidence * 100);
+  const explain = `AI suggested the category with ${pct}% confidence; ${REVIEW_EXPLAIN[reviewStatus]}. Agents can override it on the complaint page.`;
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${REVIEW_STYLES[reviewStatus]}`}>
-      AI {Math.round(confidence * 100)}% · {reviewStatus}
+    <span
+      title={explain}
+      aria-label={explain}
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${REVIEW_STYLES[reviewStatus]}`}
+    >
+      AI {pct}% · {reviewStatus}
     </span>
   );
 }

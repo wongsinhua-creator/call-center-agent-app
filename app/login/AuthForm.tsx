@@ -45,29 +45,33 @@ export function AuthForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4 bg-white border border-neutral-200 rounded-lg p-6">
       {error && (
-        <div className="rounded-md bg-red-50 border border-red-200 text-red-800 px-3 py-2 text-sm">{error}</div>
+        <div role="alert" className="rounded-md bg-red-50 border border-red-200 text-red-800 px-3 py-2 text-sm">{error}</div>
       )}
 
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-1">Email</label>
+        <label htmlFor="login-email" className="block text-sm font-medium text-neutral-700 mb-1">Email</label>
         <input
+          id="login-email"
           type="email"
+          required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+          className="w-full min-h-11 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
           placeholder="agent@example.com"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-1">Password</label>
+        <label htmlFor="login-password" className="block text-sm font-medium text-neutral-700 mb-1">Password</label>
         <input
+          id="login-password"
           type="password"
+          required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="current-password"
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+          className="w-full min-h-11 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
           placeholder="••••••••"
         />
       </div>
@@ -75,7 +79,7 @@ export function AuthForm() {
       <button
         type="submit"
         disabled={busy}
-        className="w-full rounded-md bg-neutral-900 text-white px-4 py-2 text-sm font-medium hover:bg-neutral-700 disabled:opacity-50"
+        className="w-full min-h-11 rounded-md bg-neutral-900 text-white px-4 py-2 text-sm font-medium hover:bg-neutral-700 disabled:opacity-50"
       >
         {busy ? "Signing in…" : "Sign In"}
       </button>

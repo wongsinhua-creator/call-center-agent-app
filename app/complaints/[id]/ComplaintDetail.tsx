@@ -76,13 +76,35 @@ export function ComplaintDetail({
 
   async function saveStatus() {
     if (statusSaving || status === complaint.status) return;
+    // Guardrail: resolving requires resolution notes (also enforced server-side).
+    if (status === "resolved" && !notes.trim() && !(complaint.resolution_notes ?? "").trim()) {
+      setStatusError("Add resolution notes below before marking this complaint resolved.");
+      return;
+    }
     setStatusSaving(true);
     setStatusError(null);
     try {
-      await patch({ status });
+      await patch({ status, ...(status === "resolved" ? { resolution_notes: notes } : {}) });
       router.refresh();
     } catch (err) {
       setStatusError(err instanceof Error ? err.message : "Failed to update status.");
+    } finally {
+      setStatusSaving(false);
+    }
+  }
+
+  // Recovery path: a resolved complaint can be reopened (undo), audited as a
+  // normal status change.
+  async function reopen() {
+    if (statusSaving) return;
+    setStatusSaving(true);
+    setStatusError(null);
+    try {
+      await patch({ status: "in_progress" });
+      setStatus("in_progress");
+      router.refresh();
+    } catch (err) {
+      setStatusError(err instanceof Error ? err.message : "Failed to reopen.");
     } finally {
       setStatusSaving(false);
     }
@@ -199,22 +221,31 @@ export function ComplaintDetail({
         {complaint.category_ai_source && (
           <p className="text-xs text-neutral-400">Source: {complaint.category_ai_source}</p>
         )}
+        <p className="text-xs text-neutral-400">
+          The percentage is the classifier&apos;s confidence in its own suggestion for that field.
+          &ldquo;Unreviewed&rdquo; means no agent has checked it yet; &ldquo;confirmed&rdquo; /
+          &ldquo;overridden&rdquo; record the agent&apos;s decision. Override via the Category
+          section below — the AI never has the final word.
+        </p>
       </section>
 
       <section className="bg-white border border-neutral-200 rounded-lg p-5 space-y-3">
-        <h2 className="text-sm font-medium text-neutral-500">Handling Agent</h2>
-        <div className="flex items-center gap-2">
+        <h2 className="text-sm font-medium text-neutral-500">
+          <label htmlFor="handling-agent">Handling Agent</label>
+        </h2>
+        <div className="flex flex-wrap items-center gap-2">
           <input
+            id="handling-agent"
             type="text"
             value={agentName}
             onChange={(e) => setAgentName(e.target.value)}
             placeholder="Agent name (leave blank to unassign)"
-            className="flex-1 rounded-md border border-neutral-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+            className="flex-1 min-w-40 min-h-11 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
           />
           <button
             onClick={saveAgent}
             disabled={agentSaving || agentName.trim() === (complaint.handled_by ?? "")}
-            className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-sm hover:bg-neutral-700 disabled:opacity-40"
+            className="min-h-11 rounded-md bg-neutral-900 text-white px-3 py-2 text-sm hover:bg-neutral-700 disabled:opacity-40"
           >
             {agentSaving ? "Saving…" : complaint.handled_by ? "Reassign" : "Assign"}
           </button>
@@ -252,11 +283,15 @@ export function ComplaintDetail({
 
       <section className="bg-white border border-neutral-200 rounded-lg p-5 space-y-3">
         <h2 className="text-sm font-medium text-neutral-500">Status</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <label htmlFor="status-select" className="sr-only">
+            Complaint status
+          </label>
           <select
+            id="status-select"
             value={status}
             onChange={(e) => setStatus(e.target.value as Status)}
-            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+            className="min-h-11 rounded-md border border-neutral-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"
           >
             {STATUS_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -267,21 +302,38 @@ export function ComplaintDetail({
           <button
             onClick={saveStatus}
             disabled={statusSaving || status === complaint.status}
-            className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-sm hover:bg-neutral-700 disabled:opacity-40"
+            className="min-h-11 rounded-md bg-neutral-900 text-white px-3 py-2 text-sm hover:bg-neutral-700 disabled:opacity-40"
           >
             {statusSaving ? "Saving…" : "Save Status"}
           </button>
+          {complaint.status === "resolved" && (
+            <button
+              onClick={reopen}
+              disabled={statusSaving}
+              className="min-h-11 rounded-md border border-amber-400 text-amber-800 px-3 py-2 text-sm hover:bg-amber-50 disabled:opacity-40"
+            >
+              {statusSaving ? "Reopening…" : "Reopen Complaint"}
+            </button>
+          )}
         </div>
-        {statusError && <p className="text-xs text-red-600">{statusError}</p>}
+        {status === "resolved" && complaint.status !== "resolved" && !notes.trim() && (
+          <p className="text-xs text-amber-700">
+            Resolution notes are required before this can be saved as resolved — add them below.
+          </p>
+        )}
+        {statusError && <p className="text-xs text-red-600" role="alert">{statusError}</p>}
       </section>
 
       <section className="bg-white border border-neutral-200 rounded-lg p-5 space-y-3">
-        <h2 className="text-sm font-medium text-neutral-500">Category</h2>
-        <div className="flex items-center gap-2">
+        <h2 className="text-sm font-medium text-neutral-500">
+          <label htmlFor="category-select">Category</label>
+        </h2>
+        <div className="flex flex-wrap items-center gap-2">
           <select
+            id="category-select"
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
-            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+            className="min-h-11 rounded-md border border-neutral-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"
           >
             <option value="">Uncategorized</option>
             {categories.map((c) => (
@@ -293,56 +345,79 @@ export function ComplaintDetail({
           <button
             onClick={saveCategory}
             disabled={categorySaving || categoryId === (complaint.category_id ?? "")}
-            className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-sm hover:bg-neutral-700 disabled:opacity-40"
+            className="min-h-11 rounded-md bg-neutral-900 text-white px-3 py-2 text-sm hover:bg-neutral-700 disabled:opacity-40"
           >
             {categorySaving ? "Saving…" : "Save Category"}
           </button>
         </div>
-        {categoryError && <p className="text-xs text-red-600">{categoryError}</p>}
+        <p className="text-xs text-neutral-400">
+          Saving a category different from the AI suggestion records an override in the audit log
+          and marks the AI tag as overridden.
+        </p>
+        {categoryError && <p className="text-xs text-red-600" role="alert">{categoryError}</p>}
       </section>
 
       <section className="bg-white border border-neutral-200 rounded-lg p-5 space-y-3">
-        <h2 className="text-sm font-medium text-neutral-500">Resolution Notes</h2>
+        <h2 className="text-sm font-medium text-neutral-500">
+          <label htmlFor="resolution-notes">
+            Resolution Notes{" "}
+            <span className="font-normal text-neutral-400">(required to resolve)</span>
+          </label>
+        </h2>
         <textarea
+          id="resolution-notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={3}
           placeholder="How was this resolved?"
+          aria-describedby="resolution-notes-hint"
           className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
         />
+        <p id="resolution-notes-hint" className="sr-only">
+          Resolution notes are required before a complaint can be marked resolved.
+        </p>
         {complaint.resolved_at && (
           <p className="text-xs text-neutral-400">Resolved {formatDateTime(complaint.resolved_at)}</p>
         )}
-        {notesError && <p className="text-xs text-red-600">{notesError}</p>}
-        <div className="flex items-center gap-2">
+        {notesError && <p className="text-xs text-red-600" role="alert">{notesError}</p>}
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={saveNotes}
             disabled={notesSaving}
-            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50 disabled:opacity-40"
+            className="min-h-11 rounded-md border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-50 disabled:opacity-40"
           >
             {notesSaving ? "Saving…" : "Save Notes"}
           </button>
           {complaint.status !== "resolved" && !confirmingResolve && (
             <button
-              onClick={() => setConfirmingResolve(true)}
-              className="rounded-md bg-emerald-700 text-white px-3 py-1.5 text-sm hover:bg-emerald-600"
+              onClick={() => {
+                if (!notes.trim()) {
+                  setNotesError("Add resolution notes before marking this complaint resolved.");
+                  return;
+                }
+                setNotesError(null);
+                setConfirmingResolve(true);
+              }}
+              disabled={!notes.trim()}
+              title={notes.trim() ? undefined : "Add resolution notes first"}
+              className="min-h-11 rounded-md bg-emerald-700 text-white px-3 py-2 text-sm hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Mark Resolved
             </button>
           )}
           {confirmingResolve && (
-            <span className="flex items-center gap-2 text-sm">
-              <span className="text-neutral-600">Confirm resolve?</span>
+            <span className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-neutral-600">Resolve this complaint? This is recorded in the audit log.</span>
               <button
                 onClick={markResolved}
                 disabled={notesSaving}
-                className="rounded-md bg-emerald-700 text-white px-3 py-1.5 text-sm hover:bg-emerald-600 disabled:opacity-40"
+                className="min-h-11 rounded-md bg-emerald-700 text-white px-3 py-2 text-sm hover:bg-emerald-600 disabled:opacity-40"
               >
                 {notesSaving ? "Resolving…" : "Yes, resolve"}
               </button>
               <button
                 onClick={() => setConfirmingResolve(false)}
-                className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50"
+                className="min-h-11 rounded-md border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-50"
               >
                 Cancel
               </button>

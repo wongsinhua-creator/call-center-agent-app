@@ -74,9 +74,20 @@ export const PATCH = withErrorHandling(async function PATCH(
     }
     updates.status = body.status;
     if (body.status === "resolved") {
+      // Guardrail: a complaint cannot be resolved without resolution notes
+      // (either supplied now or already on record).
+      const incomingNotes =
+        typeof body.resolution_notes === "string" ? body.resolution_notes.trim() : "";
+      const existingNotes = (current.resolution_notes ?? "").trim();
+      if (!incomingNotes && !existingNotes) {
+        return NextResponse.json(
+          { error: "Add resolution notes before marking this complaint resolved." },
+          { status: 400 },
+        );
+      }
       updates.resolved_at = new Date().toISOString();
-      if (typeof body.resolution_notes === "string") {
-        updates.resolution_notes = body.resolution_notes.trim().slice(0, 5000);
+      if (incomingNotes) {
+        updates.resolution_notes = incomingNotes.slice(0, 5000);
       }
     } else if (current.status === "resolved") {
       updates.resolved_at = null;

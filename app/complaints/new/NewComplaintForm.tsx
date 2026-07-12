@@ -81,47 +81,57 @@ export function NewComplaintForm({ categories }: { categories: Category[] }) {
       )}
 
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-1">Caller name *</label>
+        <label htmlFor="f-caller-name" className="block text-sm font-medium text-neutral-700 mb-1">Caller name *</label>
         <input
+          id="f-caller-name"
           type="text"
+          required
+          aria-required="true"
+          aria-invalid={Boolean(errors.caller_name)}
+          aria-describedby={errors.caller_name ? "f-caller-name-error" : undefined}
           value={callerName}
           onChange={(e) => setCallerName(e.target.value)}
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+          className="w-full min-h-11 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
           placeholder="Jane Doe"
         />
-        {errors.caller_name && <p className="text-xs text-red-600 mt-1">{errors.caller_name}</p>}
+        {errors.caller_name && <p id="f-caller-name-error" role="alert" className="text-xs text-red-600 mt-1">{errors.caller_name}</p>}
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-1">Phone (optional)</label>
+        <label htmlFor="f-phone" className="block text-sm font-medium text-neutral-700 mb-1">Phone (optional)</label>
         <input
+          id="f-phone"
           type="tel"
           value={callerPhone}
           onChange={(e) => setCallerPhone(e.target.value)}
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+          className="w-full min-h-11 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
           placeholder="555-0100"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-1">
+        <label htmlFor="f-agent-name" className="block text-sm font-medium text-neutral-700 mb-1">
           Your name <span className="text-neutral-400 font-normal">(the agent taking this call)</span>
         </label>
         <input
+          id="f-agent-name"
           type="text"
           value={handledBy}
           onChange={(e) => setHandledBy(e.target.value)}
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+          className="w-full min-h-11 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
           placeholder="e.g. Sam Rivera"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-1">Channel *</label>
+        <label htmlFor="f-channel" className="block text-sm font-medium text-neutral-700 mb-1">Channel *</label>
         <select
+          id="f-channel"
+          required
+          aria-required="true"
           value={channel}
           onChange={(e) => setChannel(e.target.value)}
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+          className="w-full min-h-11 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
         >
           <option value="phone">Phone</option>
           <option value="chat">Chat</option>
@@ -130,13 +140,14 @@ export function NewComplaintForm({ categories }: { categories: Category[] }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-1">
+        <label htmlFor="f-category" className="block text-sm font-medium text-neutral-700 mb-1">
           Category <span className="text-neutral-400 font-normal">(optional — AI will tag it automatically)</span>
         </label>
         <select
+          id="f-category"
           value={categoryId}
           onChange={(e) => setCategoryId(e.target.value)}
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+          className="w-full min-h-11 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
         >
           <option value="">Let AI decide</option>
           {categories.map((c) => (
@@ -148,21 +159,26 @@ export function NewComplaintForm({ categories }: { categories: Category[] }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-1">Description *</label>
+        <label htmlFor="f-description" className="block text-sm font-medium text-neutral-700 mb-1">Description *</label>
         <textarea
+          id="f-description"
+          required
+          aria-required="true"
+          aria-invalid={Boolean(errors.description)}
+          aria-describedby={errors.description ? "f-description-error" : undefined}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={5}
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+          className="w-full min-h-11 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
           placeholder="What happened? Include as much detail as the caller gave you."
         />
-        {errors.description && <p className="text-xs text-red-600 mt-1">{errors.description}</p>}
+        {errors.description && <p id="f-description-error" role="alert" className="text-xs text-red-600 mt-1">{errors.description}</p>}
       </div>
 
       <button
         type="submit"
         disabled={submitting}
-        className="w-full rounded-md bg-neutral-900 text-white px-4 py-2 text-sm font-medium hover:bg-neutral-700 disabled:opacity-50"
+        className="w-full min-h-11 rounded-md bg-neutral-900 text-white px-4 py-2 text-sm font-medium hover:bg-neutral-700 disabled:opacity-50"
       >
         {submitting ? "Submitting…" : "Submit Complaint"}
       </button>

@@ -28,6 +28,13 @@ A polished, demoable call-center complaint tracker with AI-powered tagging and p
 | AI | OpenAI (gpt-4o-mini) with a deterministic rule-based fallback |
 | Deploy | Vercel |
 
+## Versions
+
+- **v1.1** (current) — assessment-driven hardening: accessible forms, resolution guardrails
+  with reopen, queue search/filter/sort/pagination, AI-confidence explanations.
+- **v1.0.0** (tag + `release/v1.0` branch) — pre-assessment baseline; roll back with
+  `git checkout v1.0.0` or by pointing the Vercel deployment at `release/v1.0`.
+
 ## How it works
 
 - **Complaints** are the core record: caller info, channel, description, status, priority.

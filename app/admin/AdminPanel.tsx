@@ -75,7 +75,7 @@ export function AdminPanel({ initialAgents }: { initialAgents: AgentAccount[] })
   return (
     <div className="space-y-4">
       {error && (
-        <div className="rounded-md bg-red-50 border border-red-200 text-red-800 px-3 py-2 text-sm">{error}</div>
+        <div role="alert" className="rounded-md bg-red-50 border border-red-200 text-red-800 px-3 py-2 text-sm">{error}</div>
       )}
       {notice && (
         <div className="rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 px-3 py-2 text-sm">
@@ -112,32 +112,35 @@ export function AdminPanel({ initialAgents }: { initialAgents: AgentAccount[] })
           className="bg-white border border-neutral-200 rounded-lg p-5 grid gap-3 sm:grid-cols-3"
         >
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Agent name</label>
+            <label htmlFor="adm-c-name" className="block text-xs font-medium text-neutral-600 mb-1">Agent name</label>
             <input
+              id="adm-c-name"
               value={cName}
               onChange={(e) => setCName(e.target.value)}
               placeholder="Sam Rivera"
-              className="w-full rounded-md border border-neutral-300 px-3 py-1.5 text-sm"
+              className="w-full min-h-11 rounded-md border border-neutral-300 px-3 py-2 text-sm"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Email</label>
+            <label htmlFor="adm-c-email" className="block text-xs font-medium text-neutral-600 mb-1">Email</label>
             <input
+              id="adm-c-email"
               type="email"
               value={cEmail}
               onChange={(e) => setCEmail(e.target.value)}
               placeholder="sam@callcenter.test"
-              className="w-full rounded-md border border-neutral-300 px-3 py-1.5 text-sm"
+              className="w-full min-h-11 rounded-md border border-neutral-300 px-3 py-2 text-sm"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Password (min 8 chars)</label>
+            <label htmlFor="adm-c-password" className="block text-xs font-medium text-neutral-600 mb-1">Password (min 8 chars)</label>
             <input
+              id="adm-c-password"
               type="text"
               value={cPassword}
               onChange={(e) => setCPassword(e.target.value)}
               placeholder="temporary password"
-              className="w-full rounded-md border border-neutral-300 px-3 py-1.5 text-sm"
+              className="w-full min-h-11 rounded-md border border-neutral-300 px-3 py-2 text-sm"
             />
           </div>
           <div className="sm:col-span-3">
@@ -234,31 +237,34 @@ export function AdminPanel({ initialAgents }: { initialAgents: AgentAccount[] })
                     className="grid gap-3 sm:grid-cols-3 border-t border-neutral-100 pt-3"
                   >
                     <div>
-                      <label className="block text-xs font-medium text-neutral-600 mb-1">Name</label>
+                      <label htmlFor="adm-e-name" className="block text-xs font-medium text-neutral-600 mb-1">Name</label>
                       <input
+              id="adm-e-name"
                         value={eName}
                         onChange={(e) => setEName(e.target.value)}
-                        className="w-full rounded-md border border-neutral-300 px-3 py-1.5 text-sm"
+                        className="w-full min-h-11 rounded-md border border-neutral-300 px-3 py-2 text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-neutral-600 mb-1">Email</label>
+                      <label htmlFor="adm-e-email" className="block text-xs font-medium text-neutral-600 mb-1">Email</label>
                       <input
+              id="adm-e-email"
                         type="email"
                         value={eEmail}
                         onChange={(e) => setEEmail(e.target.value)}
-                        className="w-full rounded-md border border-neutral-300 px-3 py-1.5 text-sm"
+                        className="w-full min-h-11 rounded-md border border-neutral-300 px-3 py-2 text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-neutral-600 mb-1">
+                      <label htmlFor="adm-e-password" className="block text-xs font-medium text-neutral-600 mb-1">
                         New password (blank = keep)
                       </label>
                       <input
+                        id="adm-e-password"
                         type="text"
                         value={ePassword}
                         onChange={(e) => setEPassword(e.target.value)}
-                        className="w-full rounded-md border border-neutral-300 px-3 py-1.5 text-sm"
+                        className="w-full min-h-11 rounded-md border border-neutral-300 px-3 py-2 text-sm"
                       />
                     </div>
                     <div className="sm:col-span-3">
@@ -292,17 +298,18 @@ export function AdminPanel({ initialAgents }: { initialAgents: AgentAccount[] })
                     className="flex flex-wrap items-end gap-3 border-t border-neutral-100 pt-3"
                   >
                     <div>
-                      <label className="block text-xs font-medium text-neutral-600 mb-1">
+                      <label htmlFor="adm-hours" className="block text-xs font-medium text-neutral-600 mb-1">
                         Disable period in hours — leave blank for indefinite
                       </label>
                       <input
+                        id="adm-hours"
                         type="number"
                         min="1"
                         step="1"
                         value={disableHours}
                         onChange={(e) => setDisableHours(e.target.value)}
                         placeholder="e.g. 24 (blank = until re-enabled)"
-                        className="w-64 rounded-md border border-neutral-300 px-3 py-1.5 text-sm"
+                        className="w-64 min-h-11 rounded-md border border-neutral-300 px-3 py-2 text-sm"
                       />
                     </div>
                     <button

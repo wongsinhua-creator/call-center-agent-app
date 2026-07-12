@@ -21,7 +21,8 @@ function NavLinks({ pathname, isAdmin }: { pathname: string; isAdmin: boolean })
           <Link
             key={href}
             href={href}
-            className={`block rounded-md px-3 py-2 text-sm ${
+            aria-current={active ? "page" : undefined}
+            className={`block rounded-md px-3 py-2 text-sm min-h-11 flex items-center ${
               active
                 ? "bg-neutral-100 font-medium text-neutral-900"
                 : "text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"

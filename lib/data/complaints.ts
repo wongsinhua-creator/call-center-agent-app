@@ -19,6 +19,59 @@ export async function getComplaints(supabase: SupabaseClient): Promise<Complaint
   return (data ?? []) as unknown as ComplaintWithCategory[];
 }
 
+export interface QueueQuery {
+  q?: string; // matches caller name or description
+  status?: "open" | "in_progress" | "resolved";
+  sort?: "urgency" | "newest" | "oldest";
+  page?: number; // 1-based
+  pageSize?: number;
+}
+
+export interface QueuePage {
+  complaints: ComplaintWithCategory[];
+  total: number;
+  page: number;
+  pageCount: number;
+}
+
+// Server-side queue: search, filter, sort, and paginate in the database so
+// large queues stay fast. URL-driven, so any filtered view is shareable.
+export async function getComplaintQueue(
+  supabase: SupabaseClient,
+  query: QueueQuery,
+): Promise<QueuePage> {
+  const pageSize = query.pageSize ?? 10;
+  let builder = supabase.from("complaints").select(COMPLAINT_SELECT, { count: "exact" });
+
+  if (query.q) {
+    // Escape PostgREST pattern metacharacters, then match either field.
+    const term = query.q.replace(/[%_,()]/g, " ").trim().slice(0, 100);
+    if (term) builder = builder.or(`caller_name.ilike.%${term}%,description.ilike.%${term}%`);
+  }
+  if (query.status) builder = builder.eq("status", query.status);
+
+  if (query.sort === "newest") builder = builder.order("created_at", { ascending: false });
+  else if (query.sort === "oldest") builder = builder.order("created_at", { ascending: true });
+  else
+    builder = builder
+      .order("urgency_score", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false });
+
+  const requestedPage = Math.max(1, query.page ?? 1);
+  const from = (requestedPage - 1) * pageSize;
+  const { data, error, count } = await builder.range(from, from + pageSize - 1);
+  // Out-of-range pages return a PostgREST range error — treat as empty page.
+  if (error && !/range/i.test(error.message ?? "")) throw error;
+
+  const total = count ?? 0;
+  return {
+    complaints: (data ?? []) as unknown as ComplaintWithCategory[],
+    total,
+    page: requestedPage,
+    pageCount: Math.max(1, Math.ceil(total / pageSize)),
+  };
+}
+
 export async function getComplaint(
   supabase: SupabaseClient,
   id: string,
