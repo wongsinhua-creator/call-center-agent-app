@@ -138,6 +138,21 @@ export function ComplaintDetail({
     }
   }
 
+  // Self-assign: the server derives the agent's name from their session.
+  async function claimForSelf() {
+    if (agentSaving) return;
+    setAgentSaving(true);
+    setAgentError(null);
+    try {
+      await patch({ action: "claim" });
+      router.refresh();
+    } catch (err) {
+      setAgentError(err instanceof Error ? err.message : "Failed to claim complaint.");
+    } finally {
+      setAgentSaving(false);
+    }
+  }
+
   async function saveAgent() {
     if (agentSaving || agentName.trim() === (complaint.handled_by ?? "")) return;
     setAgentSaving(true);
@@ -249,6 +264,15 @@ export function ComplaintDetail({
           >
             {agentSaving ? "Saving…" : complaint.handled_by ? "Reassign" : "Assign"}
           </button>
+          {!complaint.handled_by && (
+            <button
+              onClick={claimForSelf}
+              disabled={agentSaving}
+              className="min-h-11 rounded-md border border-neutral-900 px-3 py-2 text-sm font-medium text-neutral-900 hover:bg-neutral-900 hover:text-white disabled:opacity-40"
+            >
+              {agentSaving ? "Assigning…" : "Assign to me"}
+            </button>
+          )}
         </div>
         <p className="text-xs text-neutral-400">
           Every assignment is recorded in the audit log below.

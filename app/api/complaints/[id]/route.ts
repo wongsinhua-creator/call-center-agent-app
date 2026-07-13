@@ -52,6 +52,52 @@ export const PATCH = withErrorHandling(async function PATCH(
   const auditEntries: Parameters<typeof writeAuditLog>[1][] = [];
 
   const user = sessionUser;
+
+  // Self-assign: "claim" sets the handling agent to the signed-in user's own
+  // name (server-derived — an agent can only claim as themselves). Atomic on
+  // handled_by IS NULL so two agents can't claim the same complaint.
+  if (body.action === "claim") {
+    const claimName = (
+      (user.user_metadata as Record<string, unknown> | undefined)?.full_name?.toString().trim() ||
+      user.email ||
+      "agent"
+    ).slice(0, 100);
+
+    const { data: claimed, error: claimError } = await supabase
+      .from("complaints")
+      .update({ handled_by: claimName })
+      .eq("id", id)
+      .is("handled_by", null)
+      .select("id, user_id, status")
+      .maybeSingle();
+    if (claimError) {
+      console.error("[complaints/claim] update failed", claimError);
+      return NextResponse.json({ error: "Failed to claim complaint" }, { status: 500 });
+    }
+    if (!claimed) {
+      return NextResponse.json(
+        { error: "This complaint was already assigned — refresh to see the current owner." },
+        { status: 409 },
+      );
+    }
+
+    await writeAuditLog(supabase, {
+      complaintId: id,
+      userId: claimed.user_id,
+      action: "assigned",
+      actor: "agent",
+      actorName: user.email ?? claimName,
+      oldValue: "unassigned",
+      newValue: claimName,
+    });
+    await closeOpenSegments(supabase, id);
+    if (claimed.status !== "resolved") {
+      await openSegment(supabase, { complaintId: id, userId: claimed.user_id, agentName: claimName });
+    }
+
+    return NextResponse.json({ ok: true, handled_by: claimName });
+  }
+
   const newHandledBy =
     typeof body.handled_by === "string" ? body.handled_by.trim().slice(0, 100) || null : undefined;
   const actorName =

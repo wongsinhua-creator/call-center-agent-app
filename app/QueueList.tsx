@@ -17,6 +17,7 @@ export function QueueList({ complaints }: { complaints: ComplaintWithCategory[] 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [agent, setAgent] = useState("");
   const [busy, setBusy] = useState(false);
+  const [claiming, setClaiming] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const agentInputRef = useRef<HTMLInputElement>(null);
@@ -45,6 +46,36 @@ export function QueueList({ complaints }: { complaints: ComplaintWithCategory[] 
       else next.delete(id);
       return next;
     });
+  }
+
+  // Self-assign: the server derives the agent's name from their session.
+  async function claim(id: string, callerName: string) {
+    if (claiming) return;
+    setClaiming(id);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch(`/api/complaints/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "claim" }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Failed to claim complaint");
+      setNotice(`Assigned ${callerName}'s complaint to you (${data.handled_by}).`);
+      router.refresh();
+    } catch (err) {
+      setError(
+        err instanceof DOMException && (err.name === "TimeoutError" || err.name === "AbortError")
+          ? "The request timed out after 10 seconds. Please try again."
+          : err instanceof Error
+            ? err.message
+            : "Failed to claim complaint",
+      );
+    } finally {
+      setClaiming(null);
+    }
   }
 
   async function bulkAssign(e: React.FormEvent) {
@@ -170,15 +201,28 @@ export function QueueList({ complaints }: { complaints: ComplaintWithCategory[] 
               <p className="text-sm text-neutral-500 mt-0.5 line-clamp-1">
                 {CHANNEL_LABELS[c.channel] ?? c.channel} · {c.description}
               </p>
-              <p className="text-xs mt-1">
+              <div className="text-xs mt-1 flex flex-wrap items-center gap-2">
                 {c.handled_by ? (
                   <span className="text-neutral-600">
                     Handling: <span className="font-medium text-neutral-800">{c.handled_by}</span>
                   </span>
                 ) : (
-                  <span className="text-neutral-400">Unassigned</span>
+                  <>
+                    <span className="text-neutral-400">Unassigned</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        claim(c.id, c.caller_name);
+                      }}
+                      disabled={claiming === c.id}
+                      className="rounded-md border border-neutral-300 px-2 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-100 disabled:opacity-50"
+                    >
+                      {claiming === c.id ? "Assigning…" : "Assign to me"}
+                    </button>
+                  </>
                 )}
-              </p>
+              </div>
             </Link>
           </li>
         ))}
